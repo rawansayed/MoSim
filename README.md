@@ -67,29 +67,52 @@ $$r_{m, j}(q) = -\frac{\partial l_{mt}(q)}{\partial q_j}$$
 
 ---
 
-## 🚀 Quick Start
+## 📥 Downloads & Releases
 
-MoSim requires no installation or compilers. It runs out of the box in any modern browser supporting WebGL:
+| Package | Download Link | Description |
+| :--- | :--- | :--- |
+| **MoSim v1.0.0 Release ZIP** | [**Download MoSim_Release_v1.0.0.zip (1.28 MB)**](https://github.com/rawansayed/MoSim/releases/download/v1.0.0/MoSim_Release_v1.0.0.zip) | Standalone offline bundle with Three.js, models, and 1-click runner. |
+| **GitHub Release v1.0.0** | [**View Release v1.0.0 on GitHub**](https://github.com/rawansayed/MoSim/releases/tag/v1.0.0) | Official release notes and source code archives (`.zip`, `.tar.gz`). |
+| **Source Code Repository** | [**GitHub Repository rawansayed/MoSim**](https://github.com/rawansayed/MoSim) | Git repository for cloning and contributing. |
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/rawansayed/MoSim.git
-   cd MoSim
-   ```
+---
 
-2. **Open `index.html`:**
-   - Double-click `index.html` to open directly in Google Chrome, Microsoft Edge, Firefox, or Safari.
-   - Or start a local lightweight dev server:
-     ```bash
-     npx serve .
-     # Or with Python:
-     python -m http.server 8080
-     ```
+## 🚀 Quick Start & How to Test
 
-3. **Explore Biomechanics:**
-   - Drag the **Knee Angle** slider to watch the Patella glide, the Rectus Femoris stretch, and the yellow operating dot move across the Hill force-length curve!
-   - Click **▶ Play Gait** to watch the lower limb walk through full stance and swing phases.
-   - Switch to the **Optimization** tab, enter a knee torque, and click **Solve Muscle Recruitment** to see the quadriceps sharing the load.
+### Method A: 1-Click Desktop Runner (Windows)
+1. Download and extract [**`MoSim_Release_v1.0.0.zip`**](https://github.com/rawansayed/MoSim/releases/download/v1.0.0/MoSim_Release_v1.0.0.zip) (or clone the repository).
+2. Double-click **`run_mosim.bat`**.
+3. MoSim automatically starts the local simulation server and opens in your default browser at `http://127.0.0.1:8090/index.html`!
+
+### Method B: Directly in Browser
+- Open `index.html` directly in Google Chrome, Microsoft Edge, Firefox, or Safari. All Three.js dependencies are bundled offline in `vendor/` with zero installation required!
+
+### Method C: Lightweight Dev Server
+```bash
+git clone https://github.com/rawansayed/MoSim.git
+cd MoSim
+python -m http.server 8090
+```
+Open `http://localhost:8090/index.html`.
+
+---
+
+## 🧪 Interactive Testing Guide
+
+1. **Multi-Model Switching:**
+   - In the top navigation bar, use the model dropdown to switch between **Lower Extremity** (Pelvis-Femur-Patella-Tibia-Foot, 10 MTUs) and **Upper Limb** (Arm & Elbow 3-DOF, 6 MTUs).
+2. **Real-Time Kinematic Scrubbing:**
+   - Drag the **Knee Angle** slider to watch the Patella glide over the femoral condyles and the Rectus Femoris muscle belly stretch in real time.
+   - Notice the yellow operating-point dot in the bottom HUD tracing the active/passive Hill curve!
+3. **Runge-Kutta 4 Forward Dynamics Physics:**
+   - Click the **⚡ Forward Dynamics** button. Stimulate the quadriceps or hamstrings using the excitation sliders and watch muscle tension accelerate the skeletal segment dynamically against gravity ($I \ddot{q} = \tau_{\text{muscle}} - \tau_{\text{gravity}} - b \dot{q}$).
+4. **Motion Simulation Replay:**
+   - Click **▶ Play Motion** to replay normalized physiological human walking gait (Rajagopal 2016 dataset) or dynamic elbow flexion cycles.
+5. **OpenSim 4.x Interoperability:**
+   - Click **📁 Export .osim** to download a standard OpenSim 4.x `.osim` XML model file.
+   - Click **📊 Export .mot** to download motion capture trajectory files compatible with OpenSim's Plotter and Motion tools.
+6. **3D High-DPI Snapshot:**
+   - Click **📷 Snapshot** to save a publication-ready transparent PNG screenshot of your 3D biomechanical scene.
 
 ---
 
@@ -97,13 +120,16 @@ MoSim requires no installation or compilers. It runs out of the box in any moder
 
 ```
 MoSim/
-├── index.html       # Modern glassmorphic application UI & Three.js canvas
-├── styles.css       # PBR design tokens, responsive grid, custom slider CSS
-├── biomechanics.js  # Multibody kinematics, 3-element Hill model, moment arms
-├── plotter.js       # Real-time SVG/Canvas Hill curves & moment arm visualizer
-├── app.js           # Three.js 3D viewport, Catmull-Rom muscle tubes, animation
-├── SRS.md           # IEEE 830-compliant Software Requirements Specification
-└── README.md        # Documentation and mathematical handbook
+├── index.html           # Modern glassmorphic application UI & 3D canvas
+├── styles.css           # PBR design tokens, responsive layout, custom slider CSS
+├── biomechanics.js      # Multibody kinematics, 3-element Hill model, Upper/Lower limb, RK4
+├── plotter.js           # Real-time SVG/Canvas Hill curves & moment arm visualizer
+├── app.js               # Three.js 3D viewport, Catmull-Rom muscle tubes, animation
+├── run_mosim.bat        # 1-Click desktop runner for Windows
+├── vendor/              # Bundled offline dependencies (three.min.js, OrbitControls.js)
+├── design/              # Figma UI mockups, design tokens JSON, and specifications
+├── SRS.md               # IEEE 830-compliant Software Requirements Specification
+└── README.md            # Comprehensive documentation and quick start guide
 ```
 
 ---
