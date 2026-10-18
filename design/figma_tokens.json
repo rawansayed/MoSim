@@ -1,0 +1,70 @@
+{
+  "global": {
+    "color": {
+      "bg": {
+        "base": { "value": "#060913", "type": "color", "description": "Primary canvas deep slate background" },
+        "surface": { "value": "rgba(15, 23, 42, 0.75)", "type": "color", "description": "Glassmorphic sidebar and panel background" },
+        "elevated": { "value": "rgba(30, 41, 59, 0.70)", "type": "color", "description": "Elevated card and button background" }
+      },
+      "border": {
+        "glass": { "value": "rgba(255, 255, 255, 0.08)", "type": "color", "description": "Subtle glassmorphism border" },
+        "glow": { "value": "rgba(56, 189, 248, 0.35)", "type": "color", "description": "Active cyan glowing border" }
+      },
+      "accent": {
+        "cyan": { "value": "#38BDF8", "type": "color", "description": "Primary interactive accent and slider thumb" },
+        "blue": { "value": "#3B82F6", "type": "color", "description": "Secondary brand accent" },
+        "rose": { "value": "#F43F5E", "type": "color", "description": "Passive elastic force and muscle tension indicator" },
+        "gold": { "value": "#FACC15", "type": "color", "description": "Selected muscle operating point dot and active highlights" },
+        "green": { "value": "#22C55E", "type": "color", "description": "Optimal state and positive extension moment" },
+        "purple": { "value": "#A855F7", "type": "color", "description": "Total musculotendon tension curve" }
+      },
+      "text": {
+        "primary": { "value": "#F8FAFC", "type": "color", "description": "High contrast primary text" },
+        "secondary": { "value": "#94A3B8", "type": "color", "description": "Muted secondary text" },
+        "muted": { "value": "#64748B", "type": "color", "description": "Labels, axis ticks, and disabled text" }
+      }
+    },
+    "fontFamilies": {
+      "sans": { "value": "Inter, sans-serif", "type": "fontFamilies" },
+      "mono": { "value": "JetBrains Mono, monospace", "type": "fontFamilies" }
+    },
+    "fontSizes": {
+      "xs": { "value": "10px", "type": "fontSizes" },
+      "sm": { "value": "11px", "type": "fontSizes" },
+      "base": { "value": "12px", "type": "fontSizes" },
+      "md": { "value": "13px", "type": "fontSizes" },
+      "lg": { "value": "16px", "type": "fontSizes" },
+      "xl": { "value": "20px", "type": "fontSizes" }
+    },
+    "borderRadius": {
+      "sm": { "value": "6px", "type": "borderRadius" },
+      "md": { "value": "10px", "type": "borderRadius" },
+      "lg": { "value": "14px", "type": "borderRadius" },
+      "full": { "value": "9999px", "type": "borderRadius" }
+    },
+    "boxShadow": {
+      "glass": {
+        "value": {
+          "x": "0",
+          "y": "8",
+          "blur": "32",
+          "spread": "0",
+          "color": "rgba(0, 0, 0, 0.45)",
+          "type": "dropShadow"
+        },
+        "type": "boxShadow"
+      },
+      "glowCyan": {
+        "value": {
+          "x": "0",
+          "y": "0",
+          "blur": "16",
+          "spread": "0",
+          "color": "rgba(56, 189, 248, 0.50)",
+          "type": "dropShadow"
+        },
+        "type": "boxShadow"
+      }
+    }
+  }
+}

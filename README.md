@@ -9,6 +9,16 @@
 
 ---
 
+## 🎨 Figma UI/UX Design & Architecture
+
+| Desktop Application Viewport (Figma) | Design System & UI Kit (Tokens) |
+| :---: | :---: |
+| ![MoSim Desktop Figma Mockup](design/assets/mosim_figma_desktop_mockup.jpg) | ![MoSim Figma Design System](design/assets/mosim_figma_design_system.jpg) |
+
+> 📐 **Figma Design Tokens & Specs:** Complete tokens and Auto Layout guides are available in [`design/FIGMA_SPECIFICATIONS.md`](design/FIGMA_SPECIFICATIONS.md) and [`design/figma_tokens.json`](design/figma_tokens.json) for 1-click import into Figma!
+
+---
+
 ## 🌟 Key Features
 
 1. **Zero-Install WebGL 3D Biomechanics Viewport**
