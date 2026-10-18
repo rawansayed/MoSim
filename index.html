@@ -168,12 +168,31 @@
         <!-- Motion Data Dropdown (Matching 29164138.png) -->
         <div style="display:flex; align-items:center; gap: 5px; margin-left: 6px;">
             <span style="font-size: 11px; color: #94a3b8; font-weight: 500;">Motion:</span>
-            <select id="select-motion" class="topbar-select" style="min-width: 175px;">
-                <option value="normal_gait" selected>normal_gait.mot</option>
-                <option value="crouch1_gait">crouch1_gait.mot</option>
-                <option value="running_hamner2010">running_sprint.mot</option>
-                <option value="exoskeleton_dembia2017">exoskeleton_march.mot</option>
-                <option value="deep_squat">deep_squat.mot</option>
+            <select id="select-motion" class="topbar-select" style="min-width: 220px;">
+                <optgroup label="🌐 Whole Body Dynamics">
+                    <option value="normal_gait" selected>Whole Body: Overground Walking</option>
+                    <option value="running_hamner2010">Whole Body: Sprint & High-Speed Run</option>
+                    <option value="jumping_jack">Whole Body: Jumping Jacks</option>
+                    <option value="deep_squat">Whole Body: Power Squat & Arm Reach</option>
+                    <option value="crouch1_gait">Whole Body: Crouch Gait</option>
+                    <option value="exoskeleton_dembia2017">Whole Body: Loaded Ruck March</option>
+                </optgroup>
+                <optgroup label="💪 Upper Body & Arm Motions">
+                    <option value="arm_biceps_curl">Upper Body: Bilateral Biceps Curls</option>
+                    <option value="arm_overhead_reach">Upper Body: Overhead Reach & Grasp</option>
+                    <option value="arm_boxing_combo">Upper Body: Boxing Jab & Cross Combo</option>
+                    <option value="push_up_cycle">Upper Body: Push-Up / Press Cycle</option>
+                </optgroup>
+                <optgroup label="🗣️ Head & Cervical Neck Motions">
+                    <option value="cervical_nodding">Head & Neck: Sagittal Nodding (Yes)</option>
+                    <option value="cervical_rotation">Head & Neck: Axial Head Rotation (No)</option>
+                    <option value="cervical_circumduction">Head & Neck: Cervical Roll & Circumduction</option>
+                </optgroup>
+                <optgroup label="🦵 Lower Extremity Isolation">
+                    <option value="soccer_kick">Lower Extremity: Ballistic Soccer Kick</option>
+                    <option value="knee_extension_exercise">Lower Extremity: Seated Knee Extension</option>
+                    <option value="standing_calf_raise">Lower Extremity: Standing Calf Raise</option>
+                </optgroup>
             </select>
         </div>
 
@@ -634,9 +653,17 @@
                     <div class="dialog-row">
                         <label>Loaded motion</label>
                         <select class="dialog-input" id="id-motion-source">
-                            <option value="normal_gait">normal_gait.mot (IK Results)</option>
-                            <option value="crouch1_gait">crouch1_gait.mot</option>
-                            <option value="running_hamner2010">running_sprint.mot</option>
+                            <option value="normal_gait">normal_gait.mot (Whole Body Walking)</option>
+                            <option value="running_hamner2010">running_sprint.mot (Sprint 3.96 m/s)</option>
+                            <option value="jumping_jack">jumping_jack.mot (Jumping Jacks)</option>
+                            <option value="deep_squat">deep_squat.mot (Power Squat)</option>
+                            <option value="crouch1_gait">crouch1_gait.mot (Crouch Gait)</option>
+                            <option value="arm_biceps_curl">arm_biceps_curl.mot (Biceps Curl)</option>
+                            <option value="arm_overhead_reach">arm_overhead_reach.mot (Overhead Reach)</option>
+                            <option value="arm_boxing_combo">arm_boxing_combo.mot (Boxing Combo)</option>
+                            <option value="cervical_nodding">cervical_nodding.mot (Cervical Nodding)</option>
+                            <option value="cervical_rotation">cervical_rotation.mot (Head Rotation)</option>
+                            <option value="soccer_kick">soccer_kick.mot (Ballistic Kick)</option>
                         </select>
                     </div>
                     <div class="dialog-row">

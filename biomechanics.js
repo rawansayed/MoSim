@@ -1782,7 +1782,21 @@ class ForwardDynamicsEngine {
 class OpenSimLandmarkMotions {
     static getMotion(motionId = "normal_gait") {
         const numFrames = 101;
-        const duration = motionId === "running_hamner2010" ? 0.72 : (motionId === "deep_squat" ? 2.4 : 1.2);
+        let duration = 1.2;
+        if (motionId === "running_hamner2010") duration = 0.72;
+        else if (motionId === "jumping_jack") duration = 1.6;
+        else if (motionId === "deep_squat") duration = 2.4;
+        else if (motionId === "arm_biceps_curl") duration = 2.0;
+        else if (motionId === "arm_overhead_reach") duration = 2.2;
+        else if (motionId === "arm_boxing_combo") duration = 1.5;
+        else if (motionId === "push_up_cycle") duration = 2.0;
+        else if (motionId === "cervical_nodding") duration = 1.8;
+        else if (motionId === "cervical_rotation") duration = 2.2;
+        else if (motionId === "cervical_circumduction") duration = 2.6;
+        else if (motionId === "soccer_kick") duration = 1.6;
+        else if (motionId === "knee_extension_exercise") duration = 2.0;
+        else if (motionId === "standing_calf_raise") duration = 1.8;
+
         const dt = duration / (numFrames - 1);
         const times = [];
         const frames = [];
@@ -1792,16 +1806,34 @@ class OpenSimLandmarkMotions {
             const phase = (t / duration) % 1.0; // 0.0 to 1.0
             times.push(parseFloat(t.toFixed(4)));
 
-            let q = {};
+            // Baseline coordinates across all DoFs
+            let q = {
+                neck_flexion: 0.0,
+                neck_rotation: 0.0,
+                shoulder_flexion_r: 0.0,
+                elbow_flexion_r: 15.0,
+                shoulder_flexion_l: 0.0,
+                elbow_flexion_l: 15.0,
+                hip_flexion_r: 0.0,
+                knee_angle_r: 0.0,
+                ankle_angle_r: 0.0,
+                hip_flexion_l: 0.0,
+                knee_angle_l: 0.0,
+                ankle_angle_l: 0.0,
+                lumbar_extension: 0.0,
+                pro_sup: 0.0,
+                hip_adduction_r: 0.0
+            };
+
             let grf = { y: 0, x: 0, cop_x: 0 };
             let moments = { hip: 0, knee: 0, ankle: 0 };
-            let contact = { knee_comp: 0, hip_comp: 0 };
+            let contact = { knee_comp: 0.5, hip_comp: 0.5 };
+
+            const phi_r = phase * 2 * Math.PI;
+            const phi_l = (phase + 0.5) * 2 * Math.PI;
 
             if (motionId === "normal_gait") {
-                // Rajagopal 2016 Overground Walking (1.25 m/s)
-                const phi_r = phase * 2 * Math.PI;
-                const phi_l = (phase + 0.5) * 2 * Math.PI;
-
+                // Whole Body Overground Walking (1.25 m/s)
                 q.hip_flexion_r = 25 * Math.sin(phi_r) + 5;
                 q.knee_angle_r = phase < 0.6 ? 50 * Math.sin(Math.PI * (phase / 0.6)) : 65 * Math.sin(Math.PI * ((phase - 0.6) / 0.4));
                 q.ankle_angle_r = -12 * Math.sin(phi_r) + 2;
@@ -1813,54 +1845,27 @@ class OpenSimLandmarkMotions {
                 q.ankle_angle_l = -12 * Math.sin(phi_l) + 2;
 
                 q.lumbar_extension = -4 * Math.sin(2 * phi_r);
-                q.arm_flex_r = -22 * Math.sin(phi_r);
-                q.elbow_flex_r = 15 + 10 * Math.sin(phi_r);
-                q.arm_flex_l = 22 * Math.sin(phi_r);
-                q.elbow_flex_l = 15 - 10 * Math.sin(phi_r);
-                q.neck_flexion = 2 * Math.sin(phi_r);
+                // Synchronized Arm Swing & Head Balance
+                q.shoulder_flexion_r = -22 * Math.sin(phi_r);
+                q.elbow_flexion_r = 15 + 10 * Math.sin(phi_r);
+                q.shoulder_flexion_l = 22 * Math.sin(phi_r);
+                q.elbow_flexion_l = 15 - 10 * Math.sin(phi_r);
+                q.neck_flexion = 3 * Math.sin(phi_r);
+                q.neck_rotation = 4 * Math.sin(phi_r + Math.PI / 2);
 
-                // GRF (Bimodal vertical ground reaction force, peak ~1.15 BW = ~860 N for 75 kg)
                 if (phase < 0.60) {
                     grf.y = 860 * Math.sin(Math.PI * (phase / 0.60)) * (1 + 0.25 * Math.sin(2 * Math.PI * (phase / 0.60)));
-                    grf.x = 180 * Math.cos(Math.PI * (phase / 0.60)); // Braking then propulsion
+                    grf.x = 180 * Math.cos(Math.PI * (phase / 0.60));
                     grf.cop_x = -0.15 + 0.30 * (phase / 0.60);
                 }
-
-                // Joint Moments (N·m)
                 moments.hip = 65 * Math.sin(phi_r + 0.2);
                 moments.knee = phase < 0.6 ? 45 * Math.sin(Math.PI * (phase / 0.6)) : -15;
                 moments.ankle = phase < 0.55 ? 95 * Math.sin(Math.PI * (phase / 0.55)) : 5;
-
-                // Contact force in Body Weights (peak ~2.8 BW at mid-stance)
                 contact.knee_comp = phase < 0.60 ? 2.85 * Math.sin(Math.PI * (phase / 0.60)) : 0.4;
                 contact.hip_comp = phase < 0.60 ? 3.40 * Math.sin(Math.PI * (phase / 0.60)) : 0.5;
 
-            } else if (motionId === "crouch1_gait") {
-                // Crouch Gait: Persistent excessive knee flexion (35-65 deg)
-                const phi_r = phase * 2 * Math.PI;
-                q.hip_flexion_r = 35 + 15 * Math.sin(phi_r);
-                q.knee_angle_r = 45 + 20 * Math.sin(phi_r);
-                q.ankle_angle_r = 15 + 8 * Math.sin(phi_r); // excessive dorsiflexion
-                q.hip_flexion_l = 35 + 15 * Math.cos(phi_r);
-                q.knee_angle_l = 45 + 20 * Math.cos(phi_r);
-                q.ankle_angle_l = 15 + 8 * Math.cos(phi_r);
-                q.lumbar_extension = -10;
-                q.arm_flex_r = -10 * Math.sin(phi_r);
-                q.elbow_flex_r = 30;
-                q.arm_flex_l = 10 * Math.sin(phi_r);
-                q.elbow_flex_l = 30;
-                q.neck_flexion = 5;
-
-                grf.y = phase < 0.65 ? 820 * Math.sin(Math.PI * (phase / 0.65)) : 0;
-                moments.knee = 85 * (q.knee_angle_r / 60); // High quadriceps demand
-                moments.hip = 75;
-                moments.ankle = 60;
-                contact.knee_comp = phase < 0.65 ? 4.2 * Math.sin(Math.PI * (phase / 0.65)) : 0.6; // High contact force!
-                contact.hip_comp = phase < 0.65 ? 3.9 * Math.sin(Math.PI * (phase / 0.65)) : 0.5;
-
             } else if (motionId === "running_hamner2010") {
-                // Hamner 2010 Running Sprint (3.96 m/s, flight phase, high shock)
-                const phi_r = phase * 2 * Math.PI;
+                // Whole Body Sprint & High-Speed Run (3.96 m/s, Hamner et al.)
                 q.hip_flexion_r = 45 * Math.sin(phi_r) + 15;
                 q.knee_angle_r = phase < 0.40 ? 55 * Math.sin(Math.PI * (phase / 0.40)) : 95 * Math.sin(Math.PI * ((phase - 0.40) / 0.60));
                 q.ankle_angle_r = -25 * Math.sin(phi_r);
@@ -1868,14 +1873,16 @@ class OpenSimLandmarkMotions {
                 q.knee_angle_l = ((phase + 0.5) % 1.0) < 0.40 ? 55 : 95;
                 q.ankle_angle_l = -25 * Math.sin(phi_r + Math.PI);
                 q.lumbar_extension = -8 * Math.sin(2 * phi_r);
-                q.arm_flex_r = -55 * Math.sin(phi_r); // Vigorous arm drive
-                q.elbow_flex_r = 85 + 20 * Math.sin(phi_r);
-                q.arm_flex_l = 55 * Math.sin(phi_r);
-                q.elbow_flex_l = 85 - 20 * Math.sin(phi_r);
-                q.neck_flexion = 4;
 
-                // Impact peak + propulsion peak (up to 2.5 BW = ~1800 N)
-                grf.y = phase < 0.38 ? 1850 * Math.sin(Math.PI * (phase / 0.38)) : 0; // Flight phase!
+                // Aggressive 90° Arm Drive & Forward Neck Gaze
+                q.shoulder_flexion_r = -55 * Math.sin(phi_r);
+                q.elbow_flexion_r = 85 + 20 * Math.sin(phi_r);
+                q.shoulder_flexion_l = 55 * Math.sin(phi_r);
+                q.elbow_flexion_l = 85 - 20 * Math.sin(phi_r);
+                q.neck_flexion = 5;
+                q.neck_rotation = 5 * Math.sin(phi_r);
+
+                grf.y = phase < 0.38 ? 1850 * Math.sin(Math.PI * (phase / 0.38)) : 0;
                 grf.x = phase < 0.38 ? 480 * Math.cos(Math.PI * (phase / 0.38)) : 0;
                 moments.knee = phase < 0.38 ? 160 * Math.sin(Math.PI * (phase / 0.38)) : -20;
                 moments.ankle = phase < 0.38 ? 220 * Math.sin(Math.PI * (phase / 0.38)) : 10;
@@ -1883,32 +1890,32 @@ class OpenSimLandmarkMotions {
                 contact.knee_comp = phase < 0.38 ? 6.8 * Math.sin(Math.PI * (phase / 0.38)) : 0.3;
                 contact.hip_comp = phase < 0.38 ? 7.2 * Math.sin(Math.PI * (phase / 0.38)) : 0.4;
 
-            } else if (motionId === "exoskeleton_dembia2017") {
-                // Dembia 2017 Loaded Marching with Exoskeleton Assistance
-                const phi_r = phase * 2 * Math.PI;
-                q.hip_flexion_r = 30 * Math.sin(phi_r) + 8;
-                q.knee_angle_r = phase < 0.6 ? 55 * Math.sin(Math.PI * (phase / 0.6)) : 70 * Math.sin(Math.PI * ((phase - 0.6) / 0.4));
-                q.ankle_angle_r = -15 * Math.sin(phi_r);
-                q.hip_flexion_l = 30 * Math.sin(phi_r + Math.PI) + 8;
-                q.knee_angle_l = 55;
-                q.ankle_angle_l = -15 * Math.sin(phi_r + Math.PI);
-                q.lumbar_extension = -6;
-                q.arm_flex_r = -25 * Math.sin(phi_r);
-                q.elbow_flex_r = 20;
-                q.arm_flex_l = 25 * Math.sin(phi_r);
-                q.elbow_flex_l = 20;
-                q.neck_flexion = 2;
+            } else if (motionId === "jumping_jack") {
+                // Whole Body Jumping Jacks & Calisthenics
+                const s = 0.5 - 0.5 * Math.cos(2 * Math.PI * phase); // 0 -> 1 -> 0
+                q.shoulder_flexion_r = 95 * s;
+                q.elbow_flexion_r = 12 + 18 * s;
+                q.shoulder_flexion_l = 95 * s;
+                q.elbow_flexion_l = 12 + 18 * s;
 
-                grf.y = phase < 0.60 ? 1150 * Math.sin(Math.PI * (phase / 0.60)) : 0; // 38kg pack
-                moments.knee = phase < 0.6 ? 60 * Math.sin(Math.PI * (phase / 0.6)) : -10;
-                moments.ankle = phase < 0.55 ? 75 * Math.sin(Math.PI * (phase / 0.55)) : 5; // Reduced by exoskeleton!
-                moments.hip = 80 * Math.sin(phi_r);
-                contact.knee_comp = phase < 0.60 ? 3.1 * Math.sin(Math.PI * (phase / 0.60)) : 0.5;
-                contact.hip_comp = phase < 0.60 ? 3.6 * Math.sin(Math.PI * (phase / 0.60)) : 0.5;
+                q.hip_flexion_r = 15 * s;
+                q.knee_angle_r = 25 * s;
+                q.ankle_angle_r = 18 * s;
+                q.hip_flexion_l = 15 * s;
+                q.knee_angle_l = 25 * s;
+                q.ankle_angle_l = 18 * s;
+                q.hip_adduction_r = -15 * s;
+
+                q.neck_flexion = -6 * s;
+                q.neck_rotation = 0;
+                grf.y = 750 * (1.0 + 0.8 * s);
+                moments.knee = 65 * s;
+                moments.ankle = 80 * s;
+                contact.knee_comp = 1.0 + 2.5 * s;
 
             } else if (motionId === "deep_squat") {
-                // Deep Squat from 0 to 90 degrees
-                const squatProg = Math.sin(Math.PI * phase); // 0 -> 1 -> 0
+                // Whole Body Power Squat & Arm Reach
+                const squatProg = Math.sin(Math.PI * phase);
                 q.hip_flexion_r = 85 * squatProg;
                 q.knee_angle_r = 90 * squatProg;
                 q.ankle_angle_r = 22 * squatProg;
@@ -1916,19 +1923,229 @@ class OpenSimLandmarkMotions {
                 q.knee_angle_l = 90 * squatProg;
                 q.ankle_angle_l = 22 * squatProg;
                 q.lumbar_extension = 15 * squatProg;
-                q.arm_flex_r = -75 * squatProg; // Forward reach for balance
-                q.elbow_flex_r = 10;
-                q.arm_flex_l = -75 * squatProg;
-                q.elbow_flex_l = 10;
-                q.neck_flexion = -5 * squatProg;
+
+                // Bilateral arms extended forward horizontally for balance
+                q.shoulder_flexion_r = 75 * squatProg;
+                q.elbow_flexion_r = 10;
+                q.shoulder_flexion_l = 75 * squatProg;
+                q.elbow_flexion_l = 10;
+                q.neck_flexion = -6 * squatProg;
+                q.neck_rotation = 0;
 
                 grf.y = 750 * (1.0 + 0.15 * Math.cos(2 * Math.PI * phase));
-                moments.knee = 110 * squatProg; // Massive quadriceps moment
+                moments.knee = 110 * squatProg;
                 moments.hip = 95 * squatProg;
                 moments.ankle = 40 * squatProg;
-                contact.knee_comp = 1.0 + 3.8 * squatProg; // Up to 4.8 BW
+                contact.knee_comp = 1.0 + 3.8 * squatProg;
                 contact.hip_comp = 1.0 + 3.2 * squatProg;
+
+            } else if (motionId === "crouch1_gait") {
+                // Whole Body Crouch Gait
+                q.hip_flexion_r = 35 + 15 * Math.sin(phi_r);
+                q.knee_angle_r = 45 + 20 * Math.sin(phi_r);
+                q.ankle_angle_r = 15 + 8 * Math.sin(phi_r);
+                q.hip_flexion_l = 35 + 15 * Math.cos(phi_r);
+                q.knee_angle_l = 45 + 20 * Math.cos(phi_r);
+                q.ankle_angle_l = 15 + 8 * Math.cos(phi_r);
+                q.lumbar_extension = -10;
+
+                q.shoulder_flexion_r = 30 + 12 * Math.sin(phi_r);
+                q.elbow_flexion_r = 45;
+                q.shoulder_flexion_l = 30 - 12 * Math.sin(phi_r);
+                q.elbow_flexion_l = 45;
+                q.neck_flexion = 6;
+                q.neck_rotation = 4 * Math.sin(phi_r);
+
+                grf.y = phase < 0.65 ? 820 * Math.sin(Math.PI * (phase / 0.65)) : 0;
+                moments.knee = 85 * (q.knee_angle_r / 60);
+                moments.hip = 75;
+                moments.ankle = 60;
+                contact.knee_comp = phase < 0.65 ? 4.2 * Math.sin(Math.PI * (phase / 0.65)) : 0.6;
+                contact.hip_comp = phase < 0.65 ? 3.9 * Math.sin(Math.PI * (phase / 0.65)) : 0.5;
+
+            } else if (motionId === "exoskeleton_dembia2017") {
+                // Whole Body Loaded Ruck Marching
+                q.hip_flexion_r = 30 * Math.sin(phi_r) + 8;
+                q.knee_angle_r = phase < 0.6 ? 55 * Math.sin(Math.PI * (phase / 0.6)) : 70 * Math.sin(Math.PI * ((phase - 0.6) / 0.4));
+                q.ankle_angle_r = -15 * Math.sin(phi_r);
+                q.hip_flexion_l = 30 * Math.sin(phi_r + Math.PI) + 8;
+                q.knee_angle_l = 55;
+                q.ankle_angle_l = -15 * Math.sin(phi_r + Math.PI);
+                q.lumbar_extension = -6;
+
+                q.shoulder_flexion_r = -25 * Math.sin(phi_r);
+                q.elbow_flexion_r = 20;
+                q.shoulder_flexion_l = 25 * Math.sin(phi_r);
+                q.elbow_flexion_l = 20;
+                q.neck_flexion = 3;
+
+                grf.y = phase < 0.60 ? 1150 * Math.sin(Math.PI * (phase / 0.60)) : 0;
+                moments.knee = phase < 0.6 ? 60 * Math.sin(Math.PI * (phase / 0.6)) : -10;
+                moments.ankle = phase < 0.55 ? 75 * Math.sin(Math.PI * (phase / 0.55)) : 5;
+                moments.hip = 80 * Math.sin(phi_r);
+                contact.knee_comp = phase < 0.60 ? 3.1 * Math.sin(Math.PI * (phase / 0.60)) : 0.5;
+                contact.hip_comp = phase < 0.60 ? 3.6 * Math.sin(Math.PI * (phase / 0.60)) : 0.5;
+
+            } else if (motionId === "arm_biceps_curl") {
+                // Upper Body: Bilateral Biceps Curls & Forearm Supination
+                const curl = 0.5 - 0.5 * Math.cos(2 * Math.PI * phase);
+                q.shoulder_flexion_r = 5 + 10 * curl;
+                q.elbow_flexion_r = 15 + 115 * curl;
+                q.shoulder_flexion_l = 5 + 10 * curl;
+                q.elbow_flexion_l = 15 + 115 * curl;
+                q.pro_sup = -35 + 70 * curl;
+
+                q.neck_flexion = 12 * curl;
+                q.neck_rotation = 0;
+                q.hip_flexion_r = 4; q.knee_angle_r = 6; q.ankle_angle_r = 0;
+                q.hip_flexion_l = 4; q.knee_angle_l = 6; q.ankle_angle_l = 0;
+                grf.y = 750;
+
+            } else if (motionId === "arm_overhead_reach") {
+                // Upper Body: Overhead Reach & Functional Grasp
+                const reach = 0.5 - 0.5 * Math.cos(2 * Math.PI * phase);
+                q.shoulder_flexion_r = 10 + 95 * reach;
+                q.elbow_flexion_r = 45 - 35 * reach;
+                q.shoulder_flexion_l = 10 + 20 * reach;
+                q.elbow_flexion_l = 25;
+                q.pro_sup = 30 * reach;
+
+                q.neck_flexion = -18 * reach; // Head tilts up to follow hand
+                q.neck_rotation = 12 * reach;
+                q.hip_flexion_r = 2; q.knee_angle_r = 4;
+                q.hip_flexion_l = 2; q.knee_angle_l = 4;
+                grf.y = 750;
+
+            } else if (motionId === "arm_boxing_combo") {
+                // Upper Body: Boxing Jab, Cross & Guard Combo
+                if (phase < 0.5) {
+                    const p1 = Math.sin(Math.PI * (phase / 0.5));
+                    q.shoulder_flexion_r = 25 + 65 * p1;
+                    q.elbow_flexion_r = 85 - 70 * p1;
+                    q.shoulder_flexion_l = 30;
+                    q.elbow_flexion_l = 85;
+                } else {
+                    const p2 = Math.sin(Math.PI * ((phase - 0.5) / 0.5));
+                    q.shoulder_flexion_r = 30;
+                    q.elbow_flexion_r = 85;
+                    q.shoulder_flexion_l = 25 + 65 * p2;
+                    q.elbow_flexion_l = 85 - 70 * p2;
+                }
+                q.neck_flexion = 10;
+                q.neck_rotation = 14 * Math.sin(2 * Math.PI * phase);
+                q.hip_flexion_r = 15 + 6 * Math.sin(4 * Math.PI * phase);
+                q.knee_angle_r = 20 + 8 * Math.sin(4 * Math.PI * phase);
+                q.ankle_angle_r = 10;
+                q.hip_flexion_l = 15 - 6 * Math.sin(4 * Math.PI * phase);
+                q.knee_angle_l = 20 - 8 * Math.sin(4 * Math.PI * phase);
+                q.ankle_angle_l = 10;
+                grf.y = 750;
+
+            } else if (motionId === "push_up_cycle") {
+                // Upper Body: Push-Up / Bench Pressing Cycle
+                const press = 0.5 - 0.5 * Math.cos(2 * Math.PI * phase);
+                q.shoulder_flexion_r = 45 + 35 * press;
+                q.elbow_flexion_r = 95 - 80 * press;
+                q.shoulder_flexion_l = 45 + 35 * press;
+                q.elbow_flexion_l = 95 - 80 * press;
+                q.neck_flexion = 6 - 12 * press;
+                q.neck_rotation = 0;
+                q.hip_flexion_r = 0; q.knee_angle_r = 0; q.ankle_angle_r = 20;
+                q.hip_flexion_l = 0; q.knee_angle_l = 0; q.ankle_angle_l = 20;
+                grf.y = 520;
+
+            } else if (motionId === "cervical_nodding") {
+                // Head & Neck: Sagittal Nodding ("Yes" gesture)
+                const nod = Math.sin(2 * Math.PI * phase);
+                q.neck_flexion = 8 + 25 * nod;
+                q.neck_rotation = 0;
+                q.shoulder_flexion_r = 0; q.elbow_flexion_r = 15;
+                q.shoulder_flexion_l = 0; q.elbow_flexion_l = 15;
+                q.hip_flexion_r = 0; q.knee_angle_r = 0; q.ankle_angle_r = 0;
+                q.hip_flexion_l = 0; q.knee_angle_l = 0; q.ankle_angle_l = 0;
+                grf.y = 750;
+
+            } else if (motionId === "cervical_rotation") {
+                // Head & Neck: Axial Head Rotation (Looking Left & Right "No" gesture)
+                const rot = Math.sin(2 * Math.PI * phase);
+                q.neck_rotation = 38 * rot;
+                q.neck_flexion = 4 + 4 * (1 - Math.abs(rot));
+                q.shoulder_flexion_r = 0; q.elbow_flexion_r = 15;
+                q.shoulder_flexion_l = 0; q.elbow_flexion_l = 15;
+                q.hip_flexion_r = 0; q.knee_angle_r = 0; q.ankle_angle_r = 0;
+                q.hip_flexion_l = 0; q.knee_angle_l = 0; q.ankle_angle_l = 0;
+                grf.y = 750;
+
+            } else if (motionId === "cervical_circumduction") {
+                // Head & Neck: Cervical Roll & Multi-Axial Circumduction
+                const phi = 2 * Math.PI * phase;
+                q.neck_flexion = 8 + 22 * Math.sin(phi);
+                q.neck_rotation = 35 * Math.cos(phi);
+                q.shoulder_flexion_r = 0; q.elbow_flexion_r = 15;
+                q.shoulder_flexion_l = 0; q.elbow_flexion_l = 15;
+                q.hip_flexion_r = 0; q.knee_angle_r = 0; q.ankle_angle_r = 0;
+                q.hip_flexion_l = 0; q.knee_angle_l = 0; q.ankle_angle_l = 0;
+                grf.y = 750;
+
+            } else if (motionId === "soccer_kick") {
+                // Lower Extremity: Ballistic Soccer Kick & Follow-Through
+                if (phase < 0.35) {
+                    const p = phase / 0.35;
+                    q.hip_flexion_r = -20 * p;
+                    q.knee_angle_r = 95 * p;
+                    q.ankle_angle_r = 0;
+                } else if (phase < 0.65) {
+                    const p = (phase - 0.35) / 0.30;
+                    q.hip_flexion_r = -20 + 85 * p;
+                    q.knee_angle_r = 95 - 95 * p;
+                    q.ankle_angle_r = 25 * p;
+                } else {
+                    const p = (phase - 0.65) / 0.35;
+                    q.hip_flexion_r = 65 - 65 * p;
+                    q.knee_angle_r = 20 * p;
+                    q.ankle_angle_r = 25 - 25 * p;
+                }
+                q.hip_flexion_l = 15; q.knee_angle_l = 22; q.ankle_angle_l = 5;
+                q.shoulder_flexion_l = 45; q.elbow_flexion_l = 30;
+                q.shoulder_flexion_r = -35; q.elbow_flexion_r = 40;
+                q.neck_flexion = 15;
+                moments.knee = 145;
+                moments.hip = 130;
+
+            } else if (motionId === "knee_extension_exercise") {
+                // Lower Extremity: Seated Knee Extension Machine
+                const ext = 0.5 - 0.5 * Math.cos(2 * Math.PI * phase);
+                q.hip_flexion_r = 80;
+                q.knee_angle_r = 95 - 95 * ext;
+                q.ankle_angle_r = 15 * ext;
+                q.hip_flexion_l = 80;
+                q.knee_angle_l = 95 - 95 * ext;
+                q.ankle_angle_l = 15 * ext;
+                q.shoulder_flexion_r = -15; q.elbow_flexion_r = 45;
+                q.shoulder_flexion_l = -15; q.elbow_flexion_l = 45;
+                q.neck_flexion = 6;
+                moments.knee = 120 * ext;
+
+            } else if (motionId === "standing_calf_raise") {
+                // Lower Extremity: Standing Calf Raise & Plantarflexion
+                const raise = 0.5 - 0.5 * Math.cos(2 * Math.PI * phase);
+                q.ankle_angle_r = -15 + 60 * raise;
+                q.ankle_angle_l = -15 + 60 * raise;
+                q.knee_angle_r = 4 * (1 - raise);
+                q.knee_angle_l = 4 * (1 - raise);
+                q.hip_flexion_r = 2; q.hip_flexion_l = 2;
+                moments.ankle = 150 * raise;
             }
+
+            // Map all canonical single-limb and legacy coordinate aliases
+            q.shoulder_flexion = q.shoulder_flexion_r;
+            q.elbow_flexion = q.elbow_flexion_r;
+            q.arm_flex_r = q.shoulder_flexion_r;
+            q.arm_flex_l = q.shoulder_flexion_l;
+            q.hip_flexion = q.hip_flexion_r;
+            q.knee_angle = q.knee_angle_r;
+            q.ankle_angle = q.ankle_angle_r;
+            q.hip_adduction = q.hip_adduction_r || 0;
 
             // Generate synthetic Cleveland Clinic / Helen Hayes 3D Mocap Markers (meters)
             const markers = {

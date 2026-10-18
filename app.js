@@ -953,8 +953,29 @@ class MoSimApp {
             if (btn.getAttribute("data-joint") === defaultJoint) btn.classList.add("active");
             else btn.classList.remove("active");
         });
+
+        // Auto-recommend and load tailored motion matching the active model
+        let recommendedMotion = "normal_gait";
+        if (modelKey === "head_neck") {
+            recommendedMotion = "cervical_nodding";
+        } else if (modelKey === "right_arm" || modelKey === "left_arm") {
+            recommendedMotion = "arm_biceps_curl";
+        } else if (modelKey === "upper_body") {
+            recommendedMotion = "arm_overhead_reach";
+        } else if (modelKey === "right_leg" || modelKey === "left_leg") {
+            recommendedMotion = "soccer_kick";
+        } else if (modelKey === "lower_body") {
+            recommendedMotion = "normal_gait";
+        } else {
+            recommendedMotion = "normal_gait";
+        }
+
+        const motionSelect = document.getElementById("select-motion");
+        if (motionSelect) motionSelect.value = recommendedMotion;
+        this.loadMotion(recommendedMotion);
+
         this.updateSimulation();
-        this.logMessage("OpenSim Model", `Active model changed to: ${modelKey}`);
+        this.logMessage("OpenSim Model", `Active model changed to: ${modelKey} (Auto-loaded motion: ${recommendedMotion}).`);
     }
 
     rebindUI() {
@@ -1476,7 +1497,13 @@ class MoSimApp {
     }
 
     loadNextMotion() {
-        const motions = ["normal_gait", "crouch1_gait", "running_hamner2010", "exoskeleton_dembia2017", "deep_squat"];
+        const motions = [
+            "normal_gait", "running_hamner2010", "jumping_jack", "deep_squat", 
+            "crouch1_gait", "exoskeleton_dembia2017", "arm_biceps_curl", 
+            "arm_overhead_reach", "arm_boxing_combo", "push_up_cycle", 
+            "cervical_nodding", "cervical_rotation", "cervical_circumduction", 
+            "soccer_kick", "knee_extension_exercise", "standing_calf_raise"
+        ];
         const curIdx = motions.indexOf(this.activeMotionId);
         const nextId = motions[(curIdx + 1) % motions.length];
         const sel = document.getElementById("select-motion");
