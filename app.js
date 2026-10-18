@@ -84,6 +84,7 @@ class MoSimApp {
         this.initOpenSimTools();
         this.initUI();
         this.initPlotter();
+        this.setupOpenModelDialog();
         this.updateSimulation();
         this.animate();
 
@@ -835,6 +836,7 @@ class MoSimApp {
             }
 
             if (this.plotter) this.plotter.render();
+            if (this.plotterArm) this.plotterArm.render();
         }
     }
 
@@ -943,6 +945,14 @@ class MoSimApp {
             this.plotter.setSelectedJoint(defaultJoint);
             this.plotter.setTarget(this.system.muscles[0], this.system);
         }
+        if (this.plotterArm) {
+            this.plotterArm.setSelectedJoint(defaultJoint);
+            this.plotterArm.setTarget(this.system.muscles[0], this.system);
+        }
+        document.querySelectorAll(".btn-joint-select").forEach(btn => {
+            if (btn.getAttribute("data-joint") === defaultJoint) btn.classList.add("active");
+            else btn.classList.remove("active");
+        });
         this.updateSimulation();
         this.logMessage("OpenSim Model", `Active model changed to: ${modelKey}`);
     }
@@ -1737,21 +1747,38 @@ class MoSimApp {
         if (activeLi) activeLi.classList.add("active");
 
         if (this.plotter) this.plotter.setTarget(muscle, this.system);
+        if (this.plotterArm) this.plotterArm.setTarget(muscle, this.system);
         this.updateSimulation();
     }
 
     initPlotter() {
         const plotCanvas = document.getElementById("curve-plot-canvas");
         if (plotCanvas) {
-            this.plotter = new BiomechanicalPlotter(plotCanvas);
+            this.plotter = new BiomechanicalPlotter(plotCanvas, "hill");
             this.plotter.setTarget(this.selectedMuscle, this.system);
         }
         const armCanvas = document.getElementById("moment-arm-canvas");
         if (armCanvas) {
-            // Moment arm mini renderer
-            this.plotterArm = new BiomechanicalPlotter(armCanvas);
+            this.plotterArm = new BiomechanicalPlotter(armCanvas, "moment_arm");
+            this.plotterArm.setSelectedJoint("knee");
             this.plotterArm.setTarget(this.selectedMuscle, this.system);
         }
+
+        // Wire up joint filter buttons in right dock pane
+        document.querySelectorAll(".btn-joint-select").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                document.querySelectorAll(".btn-joint-select").forEach(b => b.classList.remove("active"));
+                e.target.classList.add("active");
+                const joint = e.target.getAttribute("data-joint");
+                if (this.plotterArm) {
+                    this.plotterArm.setSelectedJoint(joint);
+                    this.plotterArm.render();
+                }
+                if (this.plotter) {
+                    this.plotter.setSelectedJoint(joint);
+                }
+            });
+        });
     }
 
     applyPresetPose(name) {
@@ -1828,12 +1855,321 @@ class MoSimApp {
     }
 
     promptOpenModel() {
-        const modelNames = ["3DGaitModel2392", "Rajagopal2016", "Arm26", "LowerExtremity", "WholeBody"];
-        const chosen = prompt("Select OpenSim Model (.osim) to load:\n\n" + modelNames.join("\n"), "3DGaitModel2392");
-        if (chosen) {
-            this.logMessage("File", `Opened OpenSim model file: ${chosen}.osim.`);
-            alert(`Model ${chosen}.osim loaded successfully!`);
+        openModal("modal-open-model");
+        switchModelDialogTab("examples");
+    }
+
+    setupOpenModelDialog() {
+        const exampleModels = [
+            {
+                id: "3dgait_wholebody",
+                name: "3DGaitModel2392 (Whole Body)",
+                type: "whole_body",
+                file: "models/3dgait_wholebody.mosim",
+                badge: "23 DOFs · 21 MTUs",
+                badgeClass: "gold",
+                desc: "Full-body musculoskeletal walking model based on Delp et al. Includes 23 DOFs, bilateral lower extremities, lumbar trunk, cervical neck, and upper limbs.",
+                defaultJoint: "knee"
+            },
+            {
+                id: "rajagopal2016_leg",
+                name: "Rajagopal 2016 (Lower Extremity)",
+                type: "lower_body",
+                file: "models/rajagopal2016_leg.mosim",
+                badge: "Locomotion · 12 MTUs",
+                badgeClass: "",
+                desc: "High-accuracy gait analysis model with refined isometric force capacities, moment arm lines of action, and bilateral knee/ankle articulation.",
+                defaultJoint: "knee"
+            },
+            {
+                id: "arm26_reaching",
+                name: "Arm26 (Upper Extremity Reaching)",
+                type: "right_arm",
+                file: "models/arm26_reaching.mosim",
+                badge: "2 DOFs · 6 MTUs",
+                badgeClass: "green",
+                desc: "Shoulder and elbow planar reaching benchmark model with Biceps, Brachialis, and Triceps antagonistic force balance.",
+                defaultJoint: "elbow"
+            },
+            {
+                id: "cervical_spine_neck",
+                name: "Cervical Spine & Cranium",
+                type: "head_neck",
+                file: "models/cervical_spine_neck.mosim",
+                badge: "Cervical · 3 MTUs",
+                badgeClass: "green",
+                desc: "Head and neck articulation model featuring sternocleidomastoid and splenius capitis for sagittal flexion and axial head rotation.",
+                defaultJoint: "neck"
+            },
+            {
+                id: "jump_squat_athlete",
+                name: "Jump Squat Athlete",
+                type: "whole_body",
+                file: "models/jump_squat_athlete.mosim",
+                badge: "Explosive · 5.5 kN Max",
+                badgeClass: "gold",
+                desc: "High-power biomechanical model tuned for deep squat posture and explosive vertical jumping with augmented quadriceps and plantarflexors.",
+                defaultJoint: "knee"
+            }
+        ];
+
+        const grid = document.getElementById("model-examples-grid");
+        if (grid) {
+            grid.innerHTML = "";
+            exampleModels.forEach(m => {
+                const card = document.createElement("div");
+                card.className = "model-card";
+                card.innerHTML = `
+                    <div class="model-card-header">
+                        <span class="model-card-title">${m.name}</span>
+                        <span class="model-badge ${m.badgeClass}">${m.badge}</span>
+                    </div>
+                    <div class="model-card-desc">${m.desc}</div>
+                    <div class="model-card-actions">
+                        <button class="btn-card-load" id="btn-load-${m.id}">⚡ Load into MoSim</button>
+                        <button class="btn-card-dl" id="btn-dl-${m.id}">💾 Download .mosim</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+
+                const btnLoad = card.querySelector(`#btn-load-${m.id}`);
+                if (btnLoad) {
+                    btnLoad.addEventListener("click", () => {
+                        this.fetchAndLoadMosim(m.file, m.name, m.type, m.defaultJoint);
+                    });
+                }
+
+                const btnDl = card.querySelector(`#btn-dl-${m.id}`);
+                if (btnDl) {
+                    btnDl.addEventListener("click", () => {
+                        this.downloadMosimExample(m.file, `${m.id}.mosim`);
+                    });
+                }
+            });
         }
+
+        // Setup Drag and Drop
+        const dropZone = document.getElementById("mosim-drop-zone");
+        const fileInput = document.getElementById("input-mosim-file");
+        if (dropZone && fileInput) {
+            dropZone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                dropZone.classList.add("dragover");
+            });
+            dropZone.addEventListener("dragleave", () => {
+                dropZone.classList.remove("dragover");
+            });
+            dropZone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                dropZone.classList.remove("dragover");
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    this.handleMosimFileUpload(e.dataTransfer.files[0]);
+                }
+            });
+            fileInput.addEventListener("change", (e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                    this.handleMosimFileUpload(e.target.files[0]);
+                }
+            });
+        }
+
+        // Setup Export MoSim button
+        const btnExportMosim = document.getElementById("btn-export-mosim-file");
+        if (btnExportMosim) {
+            btnExportMosim.addEventListener("click", () => {
+                this.exportMosimModel();
+            });
+        }
+    }
+
+    async fetchAndLoadMosim(filePath, modelName, fallbackType, defaultJoint) {
+        try {
+            const resp = await fetch(filePath);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            this.loadModelFromMosim(data, modelName);
+        } catch (err) {
+            console.warn(`Could not fetch ${filePath}, using fallback model type ${fallbackType}:`, err);
+            this.switchModel(fallbackType || "whole_body");
+            if (defaultJoint) {
+                if (this.plotter) this.plotter.setSelectedJoint(defaultJoint);
+                if (this.plotterArm) this.plotterArm.setSelectedJoint(defaultJoint);
+            }
+            closeModal("modal-open-model");
+            this.logMessage("MoSim Model", `Loaded model '${modelName}' (${fallbackType}).`);
+        }
+    }
+
+    async downloadMosimExample(filePath, downloadName) {
+        try {
+            const resp = await fetch(filePath);
+            if (resp.ok) {
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = downloadName;
+                a.click();
+                URL.revokeObjectURL(url);
+                this.logMessage("File", `Downloaded model example: ${downloadName}`);
+                return;
+            }
+        } catch (e) {}
+
+        this.exportMosimModel(downloadName.replace(".mosim", ""));
+    }
+
+    handleMosimFileUpload(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                const m = data.model || data;
+                const preview = document.getElementById("mosim-file-preview");
+                const nameEl = document.getElementById("preview-model-filename");
+                const statsEl = document.getElementById("preview-model-stats");
+                const btnConfirm = document.getElementById("btn-confirm-import-mosim");
+
+                if (nameEl) nameEl.innerText = file.name;
+                const coordsCount = m.coordinates ? Object.keys(m.coordinates).length : "Standard";
+                const musclesCount = Array.isArray(m.muscles) ? m.muscles.length : "Standard";
+                const modelType = m.type || "whole_body";
+
+                if (statsEl) {
+                    statsEl.innerHTML = `
+                        <div><strong>Model Name:</strong> ${m.name || file.name}</div>
+                        <div><strong>Target Anatomy:</strong> ${modelType}</div>
+                        <div><strong>Degrees of Freedom:</strong> ${coordsCount} DOFs</div>
+                        <div><strong>Hill MTU Units:</strong> ${musclesCount} Muscles</div>
+                    `;
+                }
+
+                if (preview) preview.style.display = "block";
+
+                if (btnConfirm) {
+                    btnConfirm.onclick = () => {
+                        this.loadModelFromMosim(data, file.name);
+                    };
+                }
+            } catch (err) {
+                alert(`Error reading .mosim file: ${err.message}`);
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    loadModelFromMosim(data, filename) {
+        const m = data.model || data;
+        let modelType = m.type;
+        if (!modelType) {
+            if (m.coordinates && m.coordinates.neck_flexion !== undefined && m.coordinates.hip_flexion_r !== undefined) {
+                modelType = "whole_body";
+            } else if (m.coordinates && m.coordinates.hip_flexion_r !== undefined) {
+                modelType = "lower_body";
+            } else if (m.coordinates && m.coordinates.elbow_flexion !== undefined) {
+                modelType = "right_arm";
+            } else if (m.coordinates && m.coordinates.neck_flexion !== undefined) {
+                modelType = "head_neck";
+            } else {
+                modelType = "whole_body";
+            }
+        }
+
+        // Switch to appropriate skeletal architecture
+        this.switchModel(modelType);
+
+        // Apply coordinates from model
+        if (m.coordinates) {
+            for (const [k, v] of Object.entries(m.coordinates)) {
+                if (this.system.coordinates[k] !== undefined) {
+                    this.system.coordinates[k] = Number(v);
+                }
+            }
+        }
+
+        // Apply muscle parameters
+        if (Array.isArray(m.muscles)) {
+            for (const mParam of m.muscles) {
+                const existing = this.system.muscles.find(mu => mu.name === mParam.name);
+                if (existing) {
+                    if (mParam.activation !== undefined) existing.activation = Number(mParam.activation);
+                    if (mParam.maxIsometricForce !== undefined) existing.maxIsometricForce = Number(mParam.maxIsometricForce);
+                    if (mParam.optimalFiberLength !== undefined) existing.optimalFiberLength = Number(mParam.optimalFiberLength);
+                    if (mParam.tendonSlackLength !== undefined) existing.tendonSlackLength = Number(mParam.tendonSlackLength);
+                    if (mParam.pennationAngleDeg !== undefined) existing.pennationAngleDeg = Number(mParam.pennationAngleDeg);
+                }
+            }
+        }
+
+        // Set default joint
+        const defaultJoint = m.defaultJoint || (modelType.includes("arm") ? "elbow" : modelType === "head_neck" ? "neck" : "knee");
+        if (this.plotter) this.plotter.setSelectedJoint(defaultJoint);
+        if (this.plotterArm) this.plotterArm.setSelectedJoint(defaultJoint);
+        document.querySelectorAll(".btn-joint-select").forEach(btn => {
+            if (btn.getAttribute("data-joint") === defaultJoint) btn.classList.add("active");
+            else btn.classList.remove("active");
+        });
+
+        // Update UI Titles
+        const modelDisplayName = m.name || filename || `Model_${modelType}`;
+        const navTitle = document.getElementById("navigator-model-name");
+        if (navTitle) navTitle.innerText = modelDisplayName;
+        const coordsTitle = document.getElementById("coords-panel-model-name");
+        if (coordsTitle) coordsTitle.innerText = `Model: ${modelDisplayName}`;
+
+        this.rebindUI();
+        if (this.system.muscles.length > 0) {
+            this.selectMuscle(this.system.muscles[0]);
+        }
+        this.updateSimulation({ forceDOM: true });
+
+        closeModal("modal-open-model");
+        this.logMessage("MoSim Model", `Imported & initialized .mosim model '${modelDisplayName}' (${this.system.muscles.length} Hill MTUs).`);
+        alert(`Model '${modelDisplayName}' loaded successfully!`);
+    }
+
+    exportMosimModel(customName) {
+        const inputName = document.getElementById("export-mosim-name") ? document.getElementById("export-mosim-name").value : "";
+        const name = customName || (inputName.trim() ? inputName.trim() : `MoSim_${this.currentModelType}_Model`);
+        const author = document.getElementById("export-mosim-author") ? document.getElementById("export-mosim-author").value : "MoSim Biomechanics User";
+        const desc = document.getElementById("export-mosim-desc") ? document.getElementById("export-mosim-desc").value : "Biomechanical musculoskeletal model in native MoSim format.";
+
+        let defaultJoint = "knee";
+        if (this.currentModelType.includes("arm") || this.currentModelType.includes("upper")) defaultJoint = "elbow";
+        else if (this.currentModelType === "head_neck") defaultJoint = "neck";
+
+        const mosimObj = {
+            format: "MoSim",
+            version: "1.0.0",
+            model: {
+                name: name,
+                type: this.currentModelType,
+                author: author,
+                description: desc,
+                defaultJoint: defaultJoint,
+                date: new Date().toISOString(),
+                coordinates: { ...this.system.coordinates },
+                muscles: this.system.muscles.map(m => ({
+                    name: m.name,
+                    displayName: m.displayName,
+                    activation: Number(m.activation.toFixed(3)),
+                    maxIsometricForce: m.maxIsometricForce,
+                    optimalFiberLength: m.optimalFiberLength,
+                    tendonSlackLength: m.tendonSlackLength,
+                    pennationAngleDeg: m.pennationAngleDeg
+                }))
+            }
+        };
+
+        const jsonStr = JSON.stringify(mosimObj, null, 2);
+        const blob = new Blob([jsonStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${name.replace(/\s+/g, '_')}.mosim`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.logMessage("Export", `Exported and downloaded native MoSim model file: ${name}.mosim`);
     }
 
     exportOpenSimModel() {

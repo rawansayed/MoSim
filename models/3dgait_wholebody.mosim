@@ -1,0 +1,51 @@
+{
+  "format": "MoSim",
+  "version": "1.0.0",
+  "model": {
+    "name": "3DGaitModel2392_WholeBody",
+    "type": "whole_body",
+    "mass": 75.0,
+    "height": 1.75,
+    "author": "Delp et al. / MoSim Suite",
+    "description": "Full-body musculoskeletal walking model with 23 DOFs and 21 Hill-type musculotendon units.",
+    "defaultJoint": "knee",
+    "coordinates": {
+      "pelvis_tilt": 0.0,
+      "hip_flexion_r": 15.0,
+      "knee_angle_r": 18.0,
+      "ankle_angle_r": -2.0,
+      "hip_flexion_l": -10.0,
+      "knee_angle_l": 5.0,
+      "ankle_angle_l": 0.0,
+      "arm_flex_r": 12.0,
+      "elbow_flex_r": 20.0,
+      "arm_flex_l": -12.0,
+      "elbow_flex_l": 20.0,
+      "neck_flexion": 0.0,
+      "neck_rotation": 0.0
+    },
+    "muscles": [
+      { "name": "rect_fem_r", "activation": 0.18, "maxIsometricForce": 1169.0, "optimalFiberLength": 0.084, "tendonSlackLength": 0.346, "pennationAngleDeg": 5.0 },
+      { "name": "vasti_r", "activation": 0.25, "maxIsometricForce": 4500.0, "optimalFiberLength": 0.093, "tendonSlackLength": 0.136, "pennationAngleDeg": 5.0 },
+      { "name": "bifemlh_r", "activation": 0.12, "maxIsometricForce": 896.0, "optimalFiberLength": 0.109, "tendonSlackLength": 0.341, "pennationAngleDeg": 0.0 },
+      { "name": "glut_max_r", "activation": 0.15, "maxIsometricForce": 1944.0, "optimalFiberLength": 0.157, "tendonSlackLength": 0.124, "pennationAngleDeg": 0.0 },
+      { "name": "gas_med_r", "activation": 0.20, "maxIsometricForce": 1558.0, "optimalFiberLength": 0.051, "tendonSlackLength": 0.408, "pennationAngleDeg": 9.9 },
+      { "name": "tib_ant_r", "activation": 0.10, "maxIsometricForce": 905.0, "optimalFiberLength": 0.098, "tendonSlackLength": 0.223, "pennationAngleDeg": 5.0 },
+      { "name": "rect_fem_l", "activation": 0.08, "maxIsometricForce": 1169.0, "optimalFiberLength": 0.084, "tendonSlackLength": 0.346, "pennationAngleDeg": 5.0 },
+      { "name": "vasti_l", "activation": 0.10, "maxIsometricForce": 4500.0, "optimalFiberLength": 0.093, "tendonSlackLength": 0.136, "pennationAngleDeg": 5.0 },
+      { "name": "bifemlh_l", "activation": 0.22, "maxIsometricForce": 896.0, "optimalFiberLength": 0.109, "tendonSlackLength": 0.341, "pennationAngleDeg": 0.0 },
+      { "name": "glut_max_l", "activation": 0.28, "maxIsometricForce": 1944.0, "optimalFiberLength": 0.157, "tendonSlackLength": 0.124, "pennationAngleDeg": 0.0 },
+      { "name": "gas_med_l", "activation": 0.12, "maxIsometricForce": 1558.0, "optimalFiberLength": 0.051, "tendonSlackLength": 0.408, "pennationAngleDeg": 9.9 },
+      { "name": "tib_ant_l", "activation": 0.15, "maxIsometricForce": 905.0, "optimalFiberLength": 0.098, "tendonSlackLength": 0.223, "pennationAngleDeg": 5.0 },
+      { "name": "biceps_r", "activation": 0.15, "maxIsometricForce": 525.0, "optimalFiberLength": 0.116, "tendonSlackLength": 0.272, "pennationAngleDeg": 0.0 },
+      { "name": "brachialis_r", "activation": 0.15, "maxIsometricForce": 987.0, "optimalFiberLength": 0.086, "tendonSlackLength": 0.054, "pennationAngleDeg": 0.0 },
+      { "name": "triceps_r", "activation": 0.10, "maxIsometricForce": 798.0, "optimalFiberLength": 0.134, "tendonSlackLength": 0.191, "pennationAngleDeg": 0.0 },
+      { "name": "biceps_l", "activation": 0.15, "maxIsometricForce": 525.0, "optimalFiberLength": 0.116, "tendonSlackLength": 0.272, "pennationAngleDeg": 0.0 },
+      { "name": "brachialis_l", "activation": 0.15, "maxIsometricForce": 987.0, "optimalFiberLength": 0.086, "tendonSlackLength": 0.054, "pennationAngleDeg": 0.0 },
+      { "name": "triceps_l", "activation": 0.10, "maxIsometricForce": 798.0, "optimalFiberLength": 0.134, "tendonSlackLength": 0.191, "pennationAngleDeg": 0.0 },
+      { "name": "scm_r", "activation": 0.12, "maxIsometricForce": 320.0, "optimalFiberLength": 0.145, "tendonSlackLength": 0.060, "pennationAngleDeg": 0.0 },
+      { "name": "scm_l", "activation": 0.12, "maxIsometricForce": 320.0, "optimalFiberLength": 0.145, "tendonSlackLength": 0.060, "pennationAngleDeg": 0.0 },
+      { "name": "splenius", "activation": 0.10, "maxIsometricForce": 280.0, "optimalFiberLength": 0.120, "tendonSlackLength": 0.070, "pennationAngleDeg": 0.0 }
+    ]
+  }
+}

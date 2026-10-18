@@ -376,19 +376,22 @@
                     <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">
                         Selected Muscle Characteristic Curves
                     </div>
-                    <div style="height: 220px; position: relative;">
+                    <div style="height: 250px; position: relative; margin-bottom: 12px;">
                         <canvas id="curve-plot-canvas"></canvas>
                     </div>
 
-                    <div style="margin-top: 14px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
+                    <div style="margin-top: 10px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
                         Generalized Moment Arm Spectrum
                     </div>
-                    <div class="joint-filter-bar" style="margin: 8px 0;">
+                    <div class="joint-filter-bar" style="margin: 8px 0; display: flex; gap: 4px; flex-wrap: wrap;">
                         <button class="btn-joint-select active" data-joint="knee">Knee</button>
                         <button class="btn-joint-select" data-joint="hip">Hip</button>
                         <button class="btn-joint-select" data-joint="ankle">Ankle</button>
+                        <button class="btn-joint-select" data-joint="elbow">Elbow</button>
+                        <button class="btn-joint-select" data-joint="shoulder">Shoulder</button>
+                        <button class="btn-joint-select" data-joint="neck">Neck</button>
                     </div>
-                    <div style="height: 180px; position: relative;">
+                    <div style="height: 220px; position: relative;">
                         <canvas id="moment-arm-canvas"></canvas>
                     </div>
                 </div>
@@ -465,6 +468,89 @@
     <!-- =========================================================================
          OPENSIM TOOL DIALOG MODALS (Scale, IK, ID, SO, CMC, FD, JRA, Moco, Plotter, Logger)
          ========================================================================= -->
+
+    <!-- Modal 0: Open MoSim Model (.mosim) Dialog -->
+    <div class="opensim-modal-backdrop" id="modal-open-model">
+        <div class="opensim-modal-dialog" style="max-width: 680px; width: 95%;">
+            <div class="opensim-dialog-titlebar">
+                <div class="dialog-title-left">
+                    <span>📂</span> <span>Open MoSim Model (.mosim)</span>
+                </div>
+                <button class="dialog-close-btn" onclick="closeModal('modal-open-model')">✕</button>
+            </div>
+            <div class="opensim-dialog-tabs" id="open-model-tabs">
+                <button class="dialog-tab-btn active" id="tab-btn-model-examples" onclick="switchModelDialogTab('examples')">Model Library</button>
+                <button class="dialog-tab-btn" id="tab-btn-model-import" onclick="switchModelDialogTab('import')">Import .mosim File</button>
+                <button class="dialog-tab-btn" id="tab-btn-model-export" onclick="switchModelDialogTab('export')">Save Current (.mosim)</button>
+            </div>
+            <div class="opensim-dialog-body" style="max-height: 480px; overflow-y: auto;">
+                <!-- Tab 1: Examples Library -->
+                <div id="tab-view-model-examples">
+                    <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.5;">
+                        Load a validated biomechanical model from the MoSim library or download its <code>.mosim</code> source file to your computer:
+                    </p>
+                    <div class="model-cards-grid" id="model-examples-grid">
+                        <!-- Populated dynamically by app.js -->
+                    </div>
+                </div>
+
+                <!-- Tab 2: Import .mosim File from Disk -->
+                <div id="tab-view-model-import" style="display: none;">
+                    <div class="drop-zone" id="mosim-drop-zone">
+                        <div style="font-size: 36px; margin-bottom: 8px;">📥</div>
+                        <div style="font-size: 13px; font-weight: 700; color: #f8fafc; margin-bottom: 4px;">
+                            Drag and Drop any <code>.mosim</code> Model File Here
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 14px;">
+                            Accepts native MoSim files (<code>*.mosim</code>, <code>*.json</code>)
+                        </div>
+                        <label class="topbar-btn" style="cursor: pointer; display: inline-flex; background: rgba(56,189,248,0.2); border-color: var(--accent-cyan); color: #fff; padding: 6px 14px;">
+                            <span>📁 Browse Computer...</span>
+                            <input type="file" id="input-mosim-file" accept=".mosim,.json" style="display: none;">
+                        </label>
+                    </div>
+
+                    <div id="import-preview-box" style="display: none; margin-top: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--accent-cyan); border-radius: 6px; padding: 12px;">
+                        <div style="font-size: 12px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 6px;" id="import-model-name">
+                            Model Preview
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.6;" id="import-model-details">
+                            <!-- Details -->
+                        </div>
+                        <div style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 8px;">
+                            <button class="dialog-action-btn primary" id="btn-confirm-import">Load Model into Simulator</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Save Current Model as .mosim -->
+                <div id="tab-view-model-export" style="display: none;">
+                    <fieldset class="opensim-groupbox">
+                        <legend>Save Model as .mosim</legend>
+                        <div class="dialog-row">
+                            <label>File Name</label>
+                            <input type="text" class="dialog-input" id="export-mosim-name" value="MyCustomModel.mosim">
+                        </div>
+                        <div class="dialog-row">
+                            <label>Format</label>
+                            <input type="text" class="dialog-input" value="MoSim Model File (.mosim)" readonly>
+                        </div>
+                        <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px; line-height: 1.5;">
+                            Exports all current joint coordinates, active skeletal bodies, and calibrated Hill-type musculotendon parameters to a shareable <code>.mosim</code> JSON model.
+                        </p>
+                        <div style="margin-top: 12px; display: flex; justify-content: flex-end;">
+                            <button class="dialog-action-btn primary" id="btn-export-mosim-file">
+                                💾 Download .mosim File
+                            </button>
+                        </div>
+                    </fieldset>
+                </div>
+            </div>
+            <div class="opensim-dialog-footer">
+                <button class="dialog-action-btn" onclick="closeModal('modal-open-model')">Close</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal 1: Inverse Kinematics (IK) Tool Dialog (matching 29164199.png) -->
     <div class="opensim-modal-backdrop" id="modal-ik">
@@ -745,6 +831,93 @@
         </div>
     </div>
 
+    <!-- Modal 6: Open MoSim Model (.mosim) Dialog & Library -->
+    <div class="opensim-modal-backdrop" id="modal-open-model">
+        <div class="opensim-modal-dialog" style="width: 780px; max-width: 95vw;">
+            <div class="opensim-dialog-titlebar">
+                <div class="dialog-title-left">
+                    <span>🦴</span> <span>Open MoSim Biomechanical Model (.mosim)</span>
+                </div>
+                <button class="dialog-close-btn" onclick="closeModal('modal-open-model')">✕</button>
+            </div>
+            <div class="opensim-dialog-tabs" id="open-model-tabs">
+                <button class="dialog-tab-btn active" id="tab-btn-model-examples" onclick="switchModelDialogTab('examples')">Model Library & Examples</button>
+                <button class="dialog-tab-btn" id="tab-btn-model-import" onclick="switchModelDialogTab('import')">Import Custom .mosim File</button>
+                <button class="dialog-tab-btn" id="tab-btn-model-export" onclick="switchModelDialogTab('export')">Save Current (.mosim)</button>
+            </div>
+            <div class="opensim-dialog-body" style="padding: 14px; max-height: 480px; overflow-y: auto;">
+                <!-- Tab 1: Model Library & Prebuilt Examples -->
+                <div id="tab-view-model-examples">
+                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px; line-height: 1.5;">
+                        Select a curated biomechanical model file (<strong>.mosim</strong> format) to load into the visualizer, or download the model file for external research and simulation.
+                    </div>
+                    <div class="model-cards-grid" id="model-examples-grid">
+                        <!-- Populated dynamically by app.js setupOpenModelDialog() -->
+                    </div>
+                </div>
+
+                <!-- Tab 2: Import Custom .mosim File -->
+                <div id="tab-view-model-import" style="display: none;">
+                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px; line-height: 1.5;">
+                        Load any native MoSim biomechanical model file (<strong>.mosim</strong> or <strong>.json</strong>). The file describes skeletal hierarchy, coordinate boundaries, joint angles, and Hill-type muscle parameters.
+                    </div>
+
+                    <div class="drop-zone" id="mosim-drop-zone" onclick="document.getElementById('input-mosim-file').click()">
+                        <div style="font-size: 32px; margin-bottom: 8px;">📥</div>
+                        <div style="font-size: 13px; font-weight: 600; color: #f8fafc; margin-bottom: 4px;">
+                            Click to Browse or Drag & Drop .mosim File Here
+                        </div>
+                        <div style="font-size: 11px; color: #94a3b8;">
+                            Accepts *.mosim and *.json model architecture definitions
+                        </div>
+                        <input type="file" id="input-mosim-file" accept=".mosim,.json" style="display: none;">
+                    </div>
+
+                    <div id="mosim-file-preview" style="display: none; margin-top: 14px; background: rgba(15,23,42,0.8); border: 1px solid #38bdf8; border-radius: 6px; padding: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 12px; font-weight: 700; color: #38bdf8;" id="preview-model-filename">filename.mosim</span>
+                            <span class="model-badge green" id="preview-model-format">MoSim Validated</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; color: #cbd5e1;" id="preview-model-stats">
+                            <!-- Populated on file parse -->
+                        </div>
+                        <button class="dialog-action-btn primary" id="btn-confirm-import-mosim" style="width: 100%; margin-top: 12px;">
+                            🚀 Load & Render Selected .mosim Model
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Save & Export Current (.mosim) -->
+                <div id="tab-view-model-export" style="display: none;">
+                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px; line-height: 1.5;">
+                        Export the currently loaded biomechanical model, including its active joint coordinates, mass, and Hill musculotendon parameters, into a portable <strong>.mosim</strong> JSON model definition.
+                    </div>
+                    <fieldset class="opensim-groupbox">
+                        <legend>Model Metadata</legend>
+                        <div class="dialog-row">
+                            <label style="width: 110px;">Model Name:</label>
+                            <input type="text" class="dialog-input" id="export-mosim-name" value="Current_MoSim_Model">
+                        </div>
+                        <div class="dialog-row">
+                            <label style="width: 110px;">Author / Lab:</label>
+                            <input type="text" class="dialog-input" id="export-mosim-author" value="MoSim Biomechanics User">
+                        </div>
+                        <div class="dialog-row">
+                            <label style="width: 110px;">Description:</label>
+                            <input type="text" class="dialog-input" id="export-mosim-desc" value="Articulated multi-segment biomechanical model with Hill-type musculotendon units.">
+                        </div>
+                    </fieldset>
+                    <button class="dialog-action-btn primary" id="btn-export-mosim-file" style="margin-top: 8px;">
+                        💾 Save & Download .mosim File
+                    </button>
+                </div>
+            </div>
+            <div class="opensim-dialog-footer">
+                <button class="dialog-action-btn" onclick="closeModal('modal-open-model')">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- View Helpers -->
     <script>
         function switchLeftTab(tab) {
@@ -766,6 +939,14 @@
             document.getElementById("tab-content-curves").style.display = tab === "curves" ? "block" : "none";
             document.getElementById("tab-content-stim").style.display = tab === "stim" ? "block" : "none";
             document.getElementById("tab-content-solver").style.display = tab === "solver" ? "block" : "none";
+        }
+
+        function switchModelDialogTab(tab) {
+            document.querySelectorAll("#open-model-tabs .dialog-tab-btn").forEach(b => b.classList.remove("active"));
+            document.getElementById("tab-btn-model-" + tab).classList.add("active");
+            document.getElementById("tab-view-model-examples").style.display = tab === "examples" ? "block" : "none";
+            document.getElementById("tab-view-model-import").style.display = tab === "import" ? "block" : "none";
+            document.getElementById("tab-view-model-export").style.display = tab === "export" ? "block" : "none";
         }
 
         function openModal(id) {

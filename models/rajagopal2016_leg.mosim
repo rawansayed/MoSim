@@ -1,0 +1,37 @@
+{
+  "format": "MoSim",
+  "version": "1.0.0",
+  "model": {
+    "name": "Rajagopal2016_LowerExtremity",
+    "type": "lower_body",
+    "mass": 72.5,
+    "height": 1.78,
+    "author": "Rajagopal et al. / MoSim Suite",
+    "description": "High-fidelity lower extremity model for human locomotion analysis (hip, knee, ankle DOFs).",
+    "defaultJoint": "knee",
+    "coordinates": {
+      "pelvis_tilt": 0.0,
+      "hip_flexion_r": 25.0,
+      "hip_adduction_r": 2.0,
+      "knee_angle_r": 35.0,
+      "ankle_angle_r": -5.0,
+      "hip_flexion_l": -15.0,
+      "knee_angle_l": 10.0,
+      "ankle_angle_l": 5.0
+    },
+    "muscles": [
+      { "name": "rect_fem_r", "activation": 0.22, "maxIsometricForce": 1250.0, "optimalFiberLength": 0.084, "tendonSlackLength": 0.346, "pennationAngleDeg": 5.0 },
+      { "name": "vasti_r", "activation": 0.35, "maxIsometricForce": 4800.0, "optimalFiberLength": 0.093, "tendonSlackLength": 0.136, "pennationAngleDeg": 5.0 },
+      { "name": "bifemlh_r", "activation": 0.18, "maxIsometricForce": 920.0, "optimalFiberLength": 0.109, "tendonSlackLength": 0.341, "pennationAngleDeg": 0.0 },
+      { "name": "glut_max_r", "activation": 0.20, "maxIsometricForce": 2100.0, "optimalFiberLength": 0.157, "tendonSlackLength": 0.124, "pennationAngleDeg": 0.0 },
+      { "name": "gas_med_r", "activation": 0.25, "maxIsometricForce": 1650.0, "optimalFiberLength": 0.051, "tendonSlackLength": 0.408, "pennationAngleDeg": 9.9 },
+      { "name": "tib_ant_r", "activation": 0.12, "maxIsometricForce": 950.0, "optimalFiberLength": 0.098, "tendonSlackLength": 0.223, "pennationAngleDeg": 5.0 },
+      { "name": "rect_fem_l", "activation": 0.10, "maxIsometricForce": 1250.0, "optimalFiberLength": 0.084, "tendonSlackLength": 0.346, "pennationAngleDeg": 5.0 },
+      { "name": "vasti_l", "activation": 0.12, "maxIsometricForce": 4800.0, "optimalFiberLength": 0.093, "tendonSlackLength": 0.136, "pennationAngleDeg": 5.0 },
+      { "name": "bifemlh_l", "activation": 0.25, "maxIsometricForce": 920.0, "optimalFiberLength": 0.109, "tendonSlackLength": 0.341, "pennationAngleDeg": 0.0 },
+      { "name": "glut_max_l", "activation": 0.30, "maxIsometricForce": 2100.0, "optimalFiberLength": 0.157, "tendonSlackLength": 0.124, "pennationAngleDeg": 0.0 },
+      { "name": "gas_med_l", "activation": 0.15, "maxIsometricForce": 1650.0, "optimalFiberLength": 0.051, "tendonSlackLength": 0.408, "pennationAngleDeg": 9.9 },
+      { "name": "tib_ant_l", "activation": 0.18, "maxIsometricForce": 950.0, "optimalFiberLength": 0.098, "tendonSlackLength": 0.223, "pennationAngleDeg": 5.0 }
+    ]
+  }
+}

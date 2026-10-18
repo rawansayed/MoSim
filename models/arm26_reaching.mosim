@@ -1,0 +1,23 @@
+{
+  "format": "MoSim",
+  "version": "1.0.0",
+  "model": {
+    "name": "Arm26_ReachingModel",
+    "type": "right_arm",
+    "mass": 4.5,
+    "height": 0.70,
+    "author": "Holzbaur et al. / MoSim Suite",
+    "description": "Upper limb musculoskeletal reaching model with shoulder flexion and elbow flexion.",
+    "defaultJoint": "elbow",
+    "coordinates": {
+      "shoulder_flexion": 45.0,
+      "elbow_flexion": 55.0,
+      "pro_sup": 15.0
+    },
+    "muscles": [
+      { "name": "biceps_r", "activation": 0.35, "maxIsometricForce": 620.0, "optimalFiberLength": 0.116, "tendonSlackLength": 0.272, "pennationAngleDeg": 0.0 },
+      { "name": "brachialis_r", "activation": 0.40, "maxIsometricForce": 1050.0, "optimalFiberLength": 0.086, "tendonSlackLength": 0.054, "pennationAngleDeg": 0.0 },
+      { "name": "triceps_r", "activation": 0.08, "maxIsometricForce": 850.0, "optimalFiberLength": 0.134, "tendonSlackLength": 0.191, "pennationAngleDeg": 0.0 }
+    ]
+  }
+}

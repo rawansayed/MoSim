@@ -1,0 +1,22 @@
+{
+  "format": "MoSim",
+  "version": "1.0.0",
+  "model": {
+    "name": "CervicalSpine_HeadNeck",
+    "type": "head_neck",
+    "mass": 5.2,
+    "height": 0.35,
+    "author": "Vasavada et al. / MoSim Suite",
+    "description": "Cervical spine and cranium articulation model with SCM and Splenius Capitis Hill MTUs.",
+    "defaultJoint": "neck",
+    "coordinates": {
+      "neck_flexion": 20.0,
+      "neck_rotation": 25.0
+    },
+    "muscles": [
+      { "name": "scm_r", "activation": 0.45, "maxIsometricForce": 360.0, "optimalFiberLength": 0.145, "tendonSlackLength": 0.060, "pennationAngleDeg": 0.0 },
+      { "name": "scm_l", "activation": 0.10, "maxIsometricForce": 360.0, "optimalFiberLength": 0.145, "tendonSlackLength": 0.060, "pennationAngleDeg": 0.0 },
+      { "name": "splenius", "activation": 0.30, "maxIsometricForce": 320.0, "optimalFiberLength": 0.120, "tendonSlackLength": 0.070, "pennationAngleDeg": 0.0 }
+    ]
+  }
+}

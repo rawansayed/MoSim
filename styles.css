@@ -1261,4 +1261,132 @@ body.theme-classic .center-viewport {
     background: radial-gradient(circle at center, #f5f5f5 0%, #d8d8d8 100%);
 }
 
+/* Open Model Dialog & MoSim Model Cards */
+.model-cards-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.model-card {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    transition: all 0.15s ease;
+}
+
+.model-card:hover {
+    border-color: #38bdf8;
+    background: rgba(15, 23, 42, 0.9);
+    box-shadow: 0 4px 15px rgba(56, 189, 248, 0.12);
+}
+
+.model-card-info {
+    flex: 1;
+}
+
+.model-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.model-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+.model-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: rgba(56, 189, 248, 0.18);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.model-badge.gold {
+    background: rgba(250, 204, 21, 0.18);
+    color: #facc15;
+    border-color: rgba(250, 204, 21, 0.35);
+}
+
+.model-badge.green {
+    background: rgba(34, 197, 94, 0.18);
+    color: #4ade80;
+    border-color: rgba(34, 197, 94, 0.35);
+}
+
+.model-card-desc {
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+.model-card-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.btn-card-load {
+    background: #0284c7;
+    border: 1px solid #38bdf8;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.btn-card-load:hover {
+    background: #0369a1;
+}
+
+.btn-card-dl {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.btn-card-dl:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+}
+
+/* Drop Zone for Drag-and-Drop .mosim files */
+.drop-zone {
+    border: 2px dashed rgba(56, 189, 248, 0.4);
+    border-radius: 8px;
+    padding: 32px 20px;
+    text-align: center;
+    background: rgba(15, 23, 42, 0.5);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.drop-zone.dragover {
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+}
+
 

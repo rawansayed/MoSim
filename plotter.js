@@ -10,13 +10,15 @@
 class BiomechanicalPlotter {
     /**
      * @param {HTMLCanvasElement} canvas
+     * @param {"hill"|"moment_arm"|"both"} mode
      */
-    constructor(canvas) {
+    constructor(canvas, mode = "both") {
         this.canvas = canvas;
-        this.ctx = canvas.getContext("2d");
+        this.ctx = canvas ? canvas.getContext("2d") : null;
+        this.mode = mode; // "hill", "moment_arm", or "both"
         this.activeMuscle = null;
         this.system = null;
-        this.selectedJoint = "knee"; // "knee", "hip", "ankle", "elbow", "shoulder"
+        this.selectedJoint = "knee"; // "knee", "hip", "ankle", "elbow", "shoulder", "neck"
 
         // Aesthetics tokens
         this.colors = {
@@ -50,7 +52,7 @@ class BiomechanicalPlotter {
 
     /**
      * Set selected joint for moment arm analysis
-     * @param {string} jointName - "knee", "hip", "ankle", "elbow", "shoulder"
+     * @param {string} jointName - "knee", "hip", "ankle", "elbow", "shoulder", "neck"
      */
     setSelectedJoint(jointName) {
         this.selectedJoint = jointName;
@@ -91,82 +93,82 @@ class BiomechanicalPlotter {
 
         if (!this.activeMuscle || !this.system) {
             ctx.fillStyle = this.colors.textDim;
-            ctx.font = "13px 'Inter', sans-serif";
+            ctx.font = "12px 'Inter', sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText("Select a muscle in the Model Explorer to inspect Hill force-length equilibrium", w / 2, h / 2);
+            ctx.fillText("Select a muscle in Model Explorer to view curves", w / 2, h / 2);
             return;
         }
 
-        // Layout: Left 58% = Hill Force-Length Curves, Right 42% = Moment Arm Bar Chart
-        const splitX = Math.floor(w * 0.56);
+        if (this.mode === "hill") {
+            this.renderHillCurve(0, 0, w, h);
+        } else if (this.mode === "moment_arm") {
+            this.renderMomentArmChart(0, 0, w, h);
+        } else {
+            // Both mode (wide modal/view)
+            const splitX = Math.floor(w * 0.55);
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(splitX, 8);
+            ctx.lineTo(splitX, h - 8);
+            ctx.stroke();
 
-        // Vertical divider
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(splitX, 8);
-        ctx.lineTo(splitX, h - 8);
-        ctx.stroke();
-
-        this.renderHillCurve(0, 0, splitX, h);
-        this.renderMomentArmChart(splitX, 0, w - splitX, h);
+            this.renderHillCurve(0, 0, splitX, h);
+            this.renderMomentArmChart(splitX, 0, w - splitX, h);
+        }
     }
 
     /**
      * Render Active, Passive, and Total Force-Length curves with live operating point
-     * Redesigned to strictly prevent text collisions and maximize clarity.
+     * Enhanced for crystal-clear readability with zero text collisions.
      */
     renderHillCurve(x0, y0, width, height) {
         const ctx = this.ctx;
-        // Generous padding so labels never clip
-        const pad = { left: 54, right: 28, top: 52, bottom: 38 };
+        const pad = { left: 45, right: 18, top: 48, bottom: 32 };
         const plotW = width - pad.left - pad.right;
         const plotH = height - pad.top - pad.bottom;
+        if (plotW <= 20 || plotH <= 20) return;
 
         // ===== 1. Header Row 1: Section Title & Selected Muscle Name =====
-        ctx.font = "700 12px 'Inter', sans-serif";
+        ctx.font = "700 11px 'Inter', sans-serif";
         ctx.fillStyle = this.colors.textBright;
         ctx.textAlign = "left";
-        ctx.fillText("HILL MUSCULOTENDON EQUILIBRIUM", x0 + pad.left, y0 + 18);
+        ctx.fillText("HILL FORCE-LENGTH EQUILIBRIUM", x0 + pad.left, y0 + 16);
 
-        // Muscle name pill badge
+        // Muscle name pill badge (top right)
         const muscleShort = this.activeMuscle.displayName.split("(")[0].trim();
-        const muscleType = this.activeMuscle.displayName.includes("(") ?
-            "(" + this.activeMuscle.displayName.split("(")[1].replace(")", "") + ")" : "";
-
         ctx.font = "600 11px 'JetBrains Mono', monospace";
         ctx.fillStyle = this.colors.dot;
         ctx.textAlign = "right";
-        ctx.fillText(`${muscleShort} ${muscleType}`, x0 + width - pad.right, y0 + 18);
+        ctx.fillText(muscleShort, x0 + width - pad.right, y0 + 16);
 
-        // ===== 2. Header Row 2: Dedicated Interactive Legend Bar =====
-        const legY = y0 + 35;
+        // ===== 2. Header Row 2: Legend Bar =====
+        const legY = y0 + 32;
         ctx.font = "500 10px 'Inter', sans-serif";
-        ctx.textAlign = "left";
 
-        // Active Curve Pill: Cyan
+        // Cyan dot + Active
         ctx.fillStyle = this.colors.activeCurve;
         ctx.beginPath();
-        ctx.arc(x0 + pad.left + 5, legY - 3, 4, 0, 2 * Math.PI);
+        ctx.arc(x0 + pad.left + 4, legY - 3, 3.5, 0, 2 * Math.PI);
         ctx.fill();
-        ctx.fillText("Active Force (a·fL)", x0 + pad.left + 14, legY);
+        ctx.fillText("Active (a·fL)", x0 + pad.left + 12, legY);
 
-        // Passive Curve Pill: Rose (dashed)
-        const passX = x0 + pad.left + 130;
+        // Rose dashed + Passive
+        const passX = x0 + pad.left + 90;
         ctx.fillStyle = this.colors.passiveCurve;
         ctx.beginPath();
-        ctx.arc(passX + 5, legY - 3, 4, 0, 2 * Math.PI);
+        ctx.arc(passX + 4, legY - 3, 3.5, 0, 2 * Math.PI);
         ctx.fill();
-        ctx.fillText("Passive Elastic (fPE)", passX + 14, legY);
+        ctx.fillText("Passive (fPE)", passX + 12, legY);
 
-        // Total Curve Pill: Purple
-        const totX = x0 + pad.left + 260;
-        if (totX + 120 < x0 + width) {
+        // Purple line + Total
+        const totX = x0 + pad.left + 175;
+        if (totX + 65 < x0 + width) {
             ctx.fillStyle = this.colors.totalCurve;
             ctx.beginPath();
-            ctx.arc(totX + 5, legY - 3, 4, 0, 2 * Math.PI);
+            ctx.arc(totX + 4, legY - 3, 3.5, 0, 2 * Math.PI);
             ctx.fill();
-            ctx.fillText("Total Tension (Ft)", totX + 14, legY);
+            ctx.fillText("Total (Ft)", totX + 12, legY);
         }
 
         // ===== 3. Dynamic Axes Scaling =====
@@ -175,17 +177,16 @@ class BiomechanicalPlotter {
 
         const minX = 0.4, maxX = 1.8;
         const minY = 0.0;
-        // Dynamically accommodate high passive stretch forces up to 2.4 F0
         const maxY = Math.min(2.4, Math.max(1.6, Math.ceil((currentNormForce * 1.1) * 5) / 5));
 
         const toScreenX = (lm) => x0 + pad.left + ((lm - minX) / (maxX - minX)) * plotW;
         const toScreenY = (f) => y0 + pad.top + plotH - ((f - minY) / (maxY - minY)) * plotH;
 
-        // ===== 4. Grid lines & Axis Numerics =====
+        // ===== 4. Grid lines & Axis labels =====
         ctx.strokeStyle = this.colors.grid;
         ctx.lineWidth = 1;
 
-        // Horizontal grid lines (Force)
+        // Horizontal Force Grid
         const yStep = maxY > 2.0 ? 0.6 : 0.4;
         for (let f = 0.0; f <= maxY + 0.05; f += yStep) {
             const sy = toScreenY(f);
@@ -195,12 +196,12 @@ class BiomechanicalPlotter {
             ctx.stroke();
 
             ctx.fillStyle = this.colors.textDim;
-            ctx.font = "10px 'JetBrains Mono', monospace";
+            ctx.font = "9px 'JetBrains Mono', monospace";
             ctx.textAlign = "right";
-            ctx.fillText(f.toFixed(1) + " F₀", x0 + pad.left - 6, sy + 3);
+            ctx.fillText(f.toFixed(1) + " F₀", x0 + pad.left - 5, sy + 3);
         }
 
-        // Vertical grid lines (Fiber Length)
+        // Vertical Length Grid
         for (let lm = 0.6; lm <= maxX; lm += 0.3) {
             const sx = toScreenX(lm);
             ctx.beginPath();
@@ -209,18 +210,18 @@ class BiomechanicalPlotter {
             ctx.stroke();
 
             ctx.fillStyle = this.colors.textDim;
-            ctx.font = "10px 'JetBrains Mono', monospace";
+            ctx.font = "9px 'JetBrains Mono', monospace";
             ctx.textAlign = "center";
-            ctx.fillText(lm.toFixed(1) + " l₀", sx, y0 + pad.top + plotH + 15);
+            ctx.fillText(lm.toFixed(1) + " l₀", sx, y0 + pad.top + plotH + 13);
         }
 
-        // Axis Titles
-        ctx.font = "500 10px 'Inter', sans-serif";
+        // X-Axis Title
+        ctx.font = "500 9px 'Inter', sans-serif";
         ctx.fillStyle = this.colors.textMid;
         ctx.textAlign = "center";
-        ctx.fillText("Normalized Fiber Length (l_m / l_0^m)", x0 + pad.left + plotW / 2, y0 + height - 8);
+        ctx.fillText("Normalized Fiber Length (l_m / l_0^m)", x0 + pad.left + plotW / 2, y0 + height - 5);
 
-        // ===== 5. Draw Active Force-Length Curve: a * fL(lm) =====
+        // ===== 5. Draw Active Curve =====
         ctx.strokeStyle = this.colors.activeCurve;
         ctx.lineWidth = 2.2;
         ctx.beginPath();
@@ -235,7 +236,7 @@ class BiomechanicalPlotter {
         }
         ctx.stroke();
 
-        // ===== 6. Draw Passive Elastic Curve: fPE(lm) =====
+        // ===== 6. Draw Passive Elastic Curve =====
         ctx.strokeStyle = this.colors.passiveCurve;
         ctx.lineWidth = 1.8;
         ctx.setLineDash([4, 3]);
@@ -251,9 +252,9 @@ class BiomechanicalPlotter {
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // ===== 7. Draw Total Musculotendon Tension: Ft = a*fL + fPE =====
+        // ===== 7. Draw Total Tension Curve =====
         ctx.strokeStyle = this.colors.totalCurve;
-        ctx.lineWidth = 2.4;
+        ctx.lineWidth = 2.2;
         ctx.beginPath();
         for (let i = 0; i <= steps; i++) {
             const normLm = minX + (i / steps) * (maxX - minX);
@@ -266,68 +267,67 @@ class BiomechanicalPlotter {
         }
         ctx.stroke();
 
-        // ===== 8. Operating Point Tracker (Dynamic Glowing Indicator) =====
+        // ===== 8. Operating Point Tracker (Gold Dot & Pill) =====
         const dotX = toScreenX(Math.max(minX, Math.min(maxX, currentNormLm)));
         const dotY = toScreenY(Math.max(minY, Math.min(maxY, currentNormForce)));
 
-        // Pulsing halo
         ctx.beginPath();
-        ctx.arc(dotX, dotY, 9, 0, 2 * Math.PI);
+        ctx.arc(dotX, dotY, 8, 0, 2 * Math.PI);
         ctx.fillStyle = this.colors.dotRing;
         ctx.fill();
 
-        // Solid gold center
         ctx.beginPath();
-        ctx.arc(dotX, dotY, 5, 0, 2 * Math.PI);
+        ctx.arc(dotX, dotY, 4.5, 0, 2 * Math.PI);
         ctx.fillStyle = this.colors.dot;
         ctx.fill();
         ctx.strokeStyle = "#FFFFFF";
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // Formatted floating telemetry pill
-        ctx.fillStyle = "rgba(10, 15, 29, 0.92)";
-        ctx.strokeStyle = "rgba(250, 204, 21, 0.55)";
+        // Floating telemetry badge
+        ctx.fillStyle = "rgba(10, 15, 29, 0.94)";
+        ctx.strokeStyle = "rgba(250, 204, 21, 0.7)";
         ctx.lineWidth = 1;
         const tagText = `l_m=${currentNormLm.toFixed(2)} l₀ | F=${this.activeMuscle.totalForce.toFixed(0)} N`;
         ctx.font = "600 10px 'JetBrains Mono', monospace";
-        const tagW = ctx.measureText(tagText).width + 14;
-        const tagX = Math.min(x0 + width - tagW - 8, Math.max(x0 + pad.left, dotX - tagW / 2));
-        const tagY = Math.max(y0 + pad.top + 4, dotY - 24);
+        const tagW = ctx.measureText(tagText).width + 12;
+        const tagX = Math.min(x0 + width - tagW - 6, Math.max(x0 + pad.left, dotX - tagW / 2));
+        const tagY = Math.max(y0 + pad.top + 2, Math.min(y0 + height - 45, dotY - 24));
 
-        ctx.fillRect(tagX, tagY, tagW, 19);
-        ctx.strokeRect(tagX, tagY, tagW, 19);
+        ctx.fillRect(tagX, tagY, tagW, 18);
+        ctx.strokeRect(tagX, tagY, tagW, 18);
         ctx.fillStyle = this.colors.dot;
         ctx.textAlign = "left";
-        ctx.fillText(tagText, tagX + 7, tagY + 13);
+        ctx.fillText(tagText, tagX + 6, tagY + 12);
     }
 
     /**
      * Render Moment Arm spectrum chart for all muscles crossing the selected joint
-     * Enhanced with wider margins for muscle names and clear extension/flexion indicators.
+     * Enhanced with clean formatting, generous vertical spacing, and clear value indicators.
      */
     renderMomentArmChart(x0, y0, width, height) {
         const ctx = this.ctx;
-        const pad = { left: 110, right: 35, top: 48, bottom: 35 };
+        const pad = { left: 95, right: 38, top: 40, bottom: 25 };
         const chartW = width - pad.left - pad.right;
         const chartH = height - pad.top - pad.bottom;
+        if (chartW <= 20 || chartH <= 20) return;
 
         // Title Row 1
-        ctx.font = "700 12px 'Inter', sans-serif";
+        ctx.font = "700 11px 'Inter', sans-serif";
         ctx.fillStyle = this.colors.textBright;
         ctx.textAlign = "left";
         const jointLabel = this.selectedJoint.toUpperCase();
-        ctx.fillText(`MOMENT ARMS: ${jointLabel} JOINT (r = -∂l/∂q)`, x0 + pad.left - 90, y0 + 18);
+        ctx.fillText(`MOMENT ARMS: ${jointLabel} (r = -∂l/∂q)`, x0 + pad.left - 85, y0 + 16);
 
         // Subtitle Row 2: Legend
         ctx.font = "500 10px 'Inter', sans-serif";
         ctx.fillStyle = this.colors.flexBar;
         ctx.textAlign = "left";
-        ctx.fillText("◀ Flexion (-)", x0 + pad.left - 90, y0 + 35);
+        ctx.fillText("◀ Flexion (-)", x0 + pad.left - 85, y0 + 30);
         ctx.fillStyle = this.colors.extBar;
-        ctx.fillText("Extension (+) ▶", x0 + pad.left + 5, y0 + 35);
+        ctx.fillText("Extension (+) ▶", x0 + pad.left + 5, y0 + 30);
 
-        // Get moment arms for the selected joint
+        // Get moment arms for selected joint
         let coordKey = this.selectedJoint;
         if (!this.system.coordLimits || !this.system.coordLimits[coordKey]) {
             if (this.selectedJoint === "knee") {
@@ -348,8 +348,12 @@ class BiomechanicalPlotter {
         }
         const momentArms = this.system.computeMomentArms(coordKey);
 
-        const muscleNames = Object.keys(momentArms);
-        const barHeight = Math.max(13, Math.floor(chartH / muscleNames.length) - 5);
+        // Filter to display primarily muscles that cross or have meaningful moment arm for this joint
+        let muscleNames = Object.keys(momentArms).filter(m => Math.abs(momentArms[m]) > 0.0005);
+        if (muscleNames.length === 0) muscleNames = Object.keys(momentArms).slice(0, 5);
+        if (muscleNames.length > 7) muscleNames = muscleNames.slice(0, 7);
+
+        const barHeight = Math.min(22, Math.max(14, Math.floor(chartH / muscleNames.length) - 4));
         const maxArm = 0.065; // 65mm max reference scale
 
         // Zero line in the center of the chart area
@@ -366,28 +370,29 @@ class BiomechanicalPlotter {
         ctx.font = "9px 'JetBrains Mono', monospace";
         ctx.fillStyle = this.colors.textDim;
         ctx.textAlign = "center";
-        ctx.fillText("-50 mm", zeroX - (0.05 / maxArm) * (chartW / 2), y0 + height - 12);
-        ctx.fillText("0", zeroX, y0 + height - 12);
-        ctx.fillText("+50 mm", zeroX + (0.05 / maxArm) * (chartW / 2), y0 + height - 12);
+        ctx.fillText("-50mm", zeroX - (0.05 / maxArm) * (chartW / 2), y0 + height - 8);
+        ctx.fillText("0", zeroX, y0 + height - 8);
+        ctx.fillText("+50mm", zeroX + (0.05 / maxArm) * (chartW / 2), y0 + height - 8);
 
         muscleNames.forEach((name, idx) => {
-            const r = momentArms[name] || 0; // meters
+            const r = momentArms[name] || 0;
             const r_mm = r * 1000;
-            const y = y0 + pad.top + idx * (barHeight + 5);
+            const y = y0 + pad.top + idx * (barHeight + 4);
 
             const isCurrent = this.activeMuscle && this.activeMuscle.name === name;
 
-            // Muscle Label on the left
+            // Formatted muscle label
+            const labelText = name.replace("_r", " (R)").replace("_l", " (L)");
             ctx.fillStyle = isCurrent ? this.colors.dot : this.colors.textBright;
-            ctx.font = isCurrent ? "700 11px 'Inter', sans-serif" : "11px 'Inter', sans-serif";
+            ctx.font = isCurrent ? "700 10px 'Inter', sans-serif" : "10px 'Inter', sans-serif";
             ctx.textAlign = "right";
-            ctx.fillText(name, x0 + pad.left - 10, y + barHeight - 2);
+            ctx.fillText(labelText, x0 + pad.left - 8, y + barHeight - 4);
 
             // Bar length and position
             const barW = (r / maxArm) * (chartW / 2);
             ctx.fillStyle = r >= 0 ?
-                (isCurrent ? "#22C55E" : "rgba(34, 197, 94, 0.80)") :
-                (isCurrent ? "#EF4444" : "rgba(239, 68, 68, 0.80)");
+                (isCurrent ? "#22C55E" : "rgba(34, 197, 94, 0.85)") :
+                (isCurrent ? "#EF4444" : "rgba(239, 68, 68, 0.85)");
 
             if (r >= 0) {
                 ctx.fillRect(zeroX, y, barW, barHeight);
@@ -396,11 +401,11 @@ class BiomechanicalPlotter {
             }
 
             // Value text
-            ctx.fillStyle = this.colors.textMid;
-            ctx.font = "10px 'JetBrains Mono', monospace";
+            ctx.fillStyle = isCurrent ? "#F8FAFC" : this.colors.textMid;
+            ctx.font = "9px 'JetBrains Mono', monospace";
             ctx.textAlign = r >= 0 ? "left" : "right";
-            const textX = r >= 0 ? zeroX + barW + 5 : zeroX + barW - 5;
-            ctx.fillText(`${r_mm > 0 ? "+" : ""}${r_mm.toFixed(1)} mm`, textX, y + barHeight - 2);
+            const textX = r >= 0 ? zeroX + barW + 4 : zeroX + barW - 4;
+            ctx.fillText(`${r_mm > 0 ? "+" : ""}${r_mm.toFixed(1)}`, textX, y + barHeight - 4);
         });
     }
 }
