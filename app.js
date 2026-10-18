@@ -1354,6 +1354,16 @@ class MoSimApp {
         mapAction("menu-help-about", () => {
             alert("MoSim v1.0.0-PRO (MoSim 4.5 Certified Architecture)\n\nDeveloped by Advanced Agentic Coding for biomechanical modeling and high-fidelity musculoskeletal simulation.");
         });
+
+        // Close dropdown menus upon selection
+        document.querySelectorAll(".dropdown-row").forEach(row => {
+            row.addEventListener("click", () => {
+                document.querySelectorAll(".mosim-dropdown").forEach(d => {
+                    d.style.display = "none";
+                    setTimeout(() => d.style.display = "", 150);
+                });
+            });
+        });
     }
 
     /**

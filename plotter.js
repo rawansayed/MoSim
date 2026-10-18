@@ -130,21 +130,33 @@ class BiomechanicalPlotter {
         if (plotW <= 20 || plotH <= 20) return;
 
         // ===== 1. Header Row 1: Section Title & Selected Muscle Name =====
-        ctx.font = "700 11px 'Inter', sans-serif";
+        ctx.font = "700 10px 'Inter', sans-serif";
         ctx.fillStyle = this.colors.textBright;
         ctx.textAlign = "left";
-        ctx.fillText("HILL FORCE-LENGTH EQUILIBRIUM", x0 + pad.left, y0 + 16);
+        ctx.fillText("HILL EQUILIBRIUM (F-L)", x0 + pad.left, y0 + 15);
 
         // Muscle name pill badge (top right)
-        const muscleShort = this.activeMuscle.displayName.split("(")[0].trim();
-        ctx.font = "600 11px 'JetBrains Mono', monospace";
+        let muscleShort = this.activeMuscle.displayName.split("(")[0].trim();
+        if (muscleShort.length > 13) muscleShort = muscleShort.slice(0, 11) + "…";
+        ctx.font = "600 10px 'JetBrains Mono', monospace";
+        const badgeW = ctx.measureText(muscleShort).width + 12;
+        const badgeX = x0 + width - pad.right - badgeW;
+        ctx.fillStyle = "rgba(250, 204, 21, 0.12)";
+        ctx.strokeStyle = "rgba(250, 204, 21, 0.35)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(badgeX, y0 + 3, badgeW, 16, 3);
+        ctx.fill();
+        ctx.stroke();
+
         ctx.fillStyle = this.colors.dot;
-        ctx.textAlign = "right";
-        ctx.fillText(muscleShort, x0 + width - pad.right, y0 + 16);
+        ctx.textAlign = "center";
+        ctx.fillText(muscleShort, badgeX + badgeW / 2, y0 + 14);
 
         // ===== 2. Header Row 2: Legend Bar =====
         const legY = y0 + 32;
         ctx.font = "500 10px 'Inter', sans-serif";
+        ctx.textAlign = "left";
 
         // Cyan dot + Active
         ctx.fillStyle = this.colors.activeCurve;
@@ -154,7 +166,7 @@ class BiomechanicalPlotter {
         ctx.fillText("Active (a·fL)", x0 + pad.left + 12, legY);
 
         // Rose dashed + Passive
-        const passX = x0 + pad.left + 90;
+        const passX = x0 + pad.left + 88;
         ctx.fillStyle = this.colors.passiveCurve;
         ctx.beginPath();
         ctx.arc(passX + 4, legY - 3, 3.5, 0, 2 * Math.PI);
@@ -162,8 +174,8 @@ class BiomechanicalPlotter {
         ctx.fillText("Passive (fPE)", passX + 12, legY);
 
         // Purple line + Total
-        const totX = x0 + pad.left + 175;
-        if (totX + 65 < x0 + width) {
+        const totX = x0 + pad.left + 168;
+        if (totX + 55 < x0 + width) {
             ctx.fillStyle = this.colors.totalCurve;
             ctx.beginPath();
             ctx.arc(totX + 4, legY - 3, 3.5, 0, 2 * Math.PI);

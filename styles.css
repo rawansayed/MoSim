@@ -623,7 +623,7 @@ body {
    ========================================================================= */
 
 /* Top Menu Bar */
-.mosim-menubar, .mosim-menubar {
+.mosim-menubar {
     height: 28px;
     background: #1e293b;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -636,7 +636,7 @@ body {
     z-index: 100;
 }
 
-.mosim-menu-item, .mosim-menu-item {
+.mosim-menu-item {
     position: relative;
     padding: 4px 10px;
     color: #cbd5e1;
@@ -645,12 +645,12 @@ body {
     transition: background 0.15s, color 0.15s;
 }
 
-.mosim-menu-item, .mosim-menu-item:hover, .mosim-menu-item, .mosim-menu-item.active {
+.mosim-menu-item:hover, .mosim-menu-item.active {
     background: #334155;
     color: #ffffff;
 }
 
-.mosim-dropdown, .mosim-dropdown {
+.mosim-dropdown {
     display: none;
     position: absolute;
     top: 100%;
@@ -664,7 +664,7 @@ body {
     z-index: 1000;
 }
 
-.mosim-menu-item, .mosim-menu-item:hover .mosim-dropdown, .mosim-dropdown {
+.mosim-menu-item:hover .mosim-dropdown {
     display: block;
 }
 
@@ -697,7 +697,7 @@ body {
 }
 
 /* MoSim Sub-Toolbar */
-.mosim-subtoolbar, .mosim-subtoolbar {
+.mosim-subtoolbar {
     height: 38px;
     background: #0f172a;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -738,7 +738,7 @@ body {
 }
 
 /* MoSim Floating Camera Toolbar inside 3D Viewport */
-.mosim-floating-view-toolbar, .mosim-floating-view-toolbar {
+.mosim-floating-view-toolbar {
     position: absolute;
     top: 14px;
     left: 14px;
@@ -820,7 +820,7 @@ body {
     color: #fff;
 }
 
-.mosim-watermark, .mosim-watermark {
+.mosim-watermark {
     position: absolute;
     bottom: 48px;
     left: 16px;
@@ -937,7 +937,7 @@ body {
 }
 
 /* MoSim Dedicated Motion Player Toolbar (matching 29164139.png) */
-.mosim-motion-player-bar, .mosim-motion-player-bar {
+.mosim-motion-player-bar {
     height: 44px;
     background: #0f172a;
     border-top: 1px solid rgba(255, 255, 255, 0.12);
@@ -1045,7 +1045,7 @@ body {
 }
 
 /* MoSim Tool Dialog Modals (matching 29164199.png, 29164196.png, 29164204.png) */
-.mosim-modal-backdrop, .mosim-modal-backdrop {
+.mosim-modal-backdrop {
     display: none;
     position: fixed;
     top: 0;
@@ -1059,7 +1059,7 @@ body {
     justify-content: center;
 }
 
-.mosim-modal-dialog, .mosim-modal-dialog {
+.mosim-modal-dialog {
     width: 620px;
     max-width: 90vw;
     background: #1e293b;
@@ -1071,7 +1071,7 @@ body {
     flex-direction: column;
 }
 
-.mosim-dialog-titlebar, .mosim-dialog-titlebar {
+.mosim-dialog-titlebar {
     height: 32px;
     background: #0f172a;
     border-bottom: 1px solid #334155;
@@ -1106,7 +1106,7 @@ body {
     color: #fff;
 }
 
-.mosim-dialog-tabs, .mosim-dialog-tabs {
+.mosim-dialog-tabs {
     display: flex;
     background: #1e293b;
     border-bottom: 1px solid #334155;
@@ -1132,13 +1132,13 @@ body {
     border-color: #475569;
 }
 
-.mosim-dialog-body, .mosim-dialog-body {
+.mosim-dialog-body {
     padding: 16px;
     max-height: 70vh;
     overflow-y: auto;
 }
 
-.mosim-groupbox, .mosim-groupbox {
+.mosim-groupbox {
     border: 1px solid #475569;
     border-radius: 4px;
     padding: 12px;
@@ -1146,7 +1146,7 @@ body {
     position: relative;
 }
 
-.mosim-groupbox, .mosim-groupbox legend {
+.mosim-groupbox legend {
     font-size: 11px;
     font-weight: 600;
     color: #38bdf8;
@@ -1187,7 +1187,7 @@ body {
     font-size: 11px;
 }
 
-.mosim-dialog-footer, .mosim-dialog-footer {
+.mosim-dialog-footer {
     height: 48px;
     background: #0f172a;
     border-top: 1px solid #334155;
@@ -1234,19 +1234,19 @@ body.theme-classic {
 }
 
 body.theme-classic .topbar,
-body.theme-classic .mosim-menubar, .mosim-menubar,
-body.theme-classic .mosim-subtoolbar, .mosim-subtoolbar,
-body.theme-classic .mosim-motion-player-bar, .mosim-motion-player-bar {
+body.theme-classic .mosim-menubar,
+body.theme-classic .mosim-subtoolbar,
+body.theme-classic .mosim-motion-player-bar {
     background: #ece9d8;
     color: #1e293b;
     border-color: #c0bfb5;
 }
 
-body.theme-classic .mosim-menu-item, .mosim-menu-item {
+body.theme-classic .mosim-menu-item {
     color: #1e293b;
 }
 
-body.theme-classic .mosim-menu-item, .mosim-menu-item:hover {
+body.theme-classic .mosim-menu-item:hover {
     background: #316ac5;
     color: #ffffff;
 }
