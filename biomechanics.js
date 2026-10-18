@@ -613,11 +613,398 @@ class MusculoskeletalSystem {
     }
 }
 
+/**
+ * Upper Limb Musculoskeletal System (Holzbaur et al. 2005)
+ * Models Arm, Elbow Flexion/Extension, and Forearm with 6 Musculotendon Units
+ */
+class UpperLimbSystem {
+    constructor() {
+        this.modelType = "upper_limb";
+        this.displayName = "Upper Limb (Arm & Elbow 3-DOF)";
+
+        this.coordinates = {
+            shoulder_flexion: 0.0, // [-20, 100] deg
+            elbow_flexion: 20.0,    // [0, 140] deg
+            pro_sup: 0.0           // [-90, 90] deg (pronation/supination)
+        };
+
+        this.coordLimits = {
+            elbow_flexion: { min: 0, max: 140, default: 20, label: "Elbow Flexion / Extension", unit: "°" },
+            shoulder_flexion: { min: -20, max: 100, default: 0, label: "Shoulder Flexion", unit: "°" },
+            pro_sup: { min: -90, max: 90, default: 0, label: "Forearm Pronation / Supination", unit: "°" }
+        };
+
+        this.segmentDimensions = {
+            scapula: { width: 0.16, height: 0.18 },
+            humerus: { length: 0.32, radius: 0.022 },
+            forearm: { length: 0.28, radius: 0.018 },
+            hand: { length: 0.18, width: 0.08 }
+        };
+
+        this.muscles = [
+            new HillMuscleModel({
+                name: "biceps_lh",
+                displayName: "Biceps Brachii Long Head (Flexor)",
+                maxIsometricForce: 624.0,
+                optimalFiberLength: 0.116,
+                tendonSlackLength: 0.272,
+                pennationAngle: 0.0
+            }),
+            new HillMuscleModel({
+                name: "biceps_sh",
+                displayName: "Biceps Brachii Short Head (Flexor)",
+                maxIsometricForce: 435.0,
+                optimalFiberLength: 0.132,
+                tendonSlackLength: 0.192,
+                pennationAngle: 0.0
+            }),
+            new HillMuscleModel({
+                name: "brachialis",
+                displayName: "Brachialis (Deep Pure Elbow Flexor)",
+                maxIsometricForce: 987.0,
+                optimalFiberLength: 0.086,
+                tendonSlackLength: 0.054,
+                pennationAngle: 0.0
+            }),
+            new HillMuscleModel({
+                name: "triceps_lh",
+                displayName: "Triceps Brachii Long Head (Extensor)",
+                maxIsometricForce: 798.0,
+                optimalFiberLength: 0.134,
+                tendonSlackLength: 0.188,
+                pennationAngle: 0.12
+            }),
+            new HillMuscleModel({
+                name: "triceps_lat",
+                displayName: "Triceps Brachii Lateral Head (Extensor)",
+                maxIsometricForce: 624.0,
+                optimalFiberLength: 0.114,
+                tendonSlackLength: 0.137,
+                pennationAngle: 0.15
+            }),
+            new HillMuscleModel({
+                name: "triceps_med",
+                displayName: "Triceps Brachii Medial Head (Extensor)",
+                maxIsometricForce: 624.0,
+                optimalFiberLength: 0.068,
+                tendonSlackLength: 0.121,
+                pennationAngle: 0.15
+            })
+        ];
+
+        this.muscleMap = new Map();
+        this.muscles.forEach(m => this.muscleMap.set(m.name, m));
+    }
+
+    computeKinematics(coords = this.coordinates) {
+        const rad = Math.PI / 180.0;
+        const qShoulder = coords.shoulder_flexion * rad;
+        const qElbow = coords.elbow_flexion * rad;
+        const qProSup = coords.pro_sup * rad;
+
+        const shoulderCenter = { x: 0.0, y: 0.0, z: 0.0 };
+        const humerusLen = this.segmentDimensions.humerus.length;
+
+        // Elbow joint center
+        const elbowCenter = {
+            x: shoulderCenter.x + humerusLen * Math.sin(qShoulder),
+            y: shoulderCenter.y - humerusLen * Math.cos(qShoulder),
+            z: shoulderCenter.z
+        };
+
+        // Forearm & Wrist center
+        const forearmLen = this.segmentDimensions.forearm.length;
+        const totalElbowAngle = qShoulder - qElbow;
+        const wristCenter = {
+            x: elbowCenter.x + forearmLen * Math.sin(totalElbowAngle),
+            y: elbowCenter.y - forearmLen * Math.cos(totalElbowAngle),
+            z: elbowCenter.z
+        };
+
+        // Olecranon process (triceps extensor lever arm behind elbow)
+        const olecranon = {
+            x: elbowCenter.x - 0.025 * Math.sin(totalElbowAngle),
+            y: elbowCenter.y + 0.025 * Math.cos(totalElbowAngle),
+            z: elbowCenter.z
+        };
+
+        return {
+            shoulderCenter,
+            elbowCenter,
+            wristCenter,
+            olecranon,
+            anglesRad: { qShoulder, qElbow, qProSup }
+        };
+    }
+
+    computeMusclePaths(kin) {
+        const p = kin;
+        const paths = {};
+
+        // 1. Biceps Long Head: Supraglenoid tubercle -> Radial tuberosity
+        paths["biceps_lh"] = [
+            { x: p.shoulderCenter.x + 0.015, y: p.shoulderCenter.y + 0.03, z: p.shoulderCenter.z + 0.02 },
+            { x: 0.5 * (p.shoulderCenter.x + p.elbowCenter.x) + 0.025, y: 0.5 * (p.shoulderCenter.y + p.elbowCenter.y), z: p.shoulderCenter.z + 0.02 },
+            { x: p.elbowCenter.x + 0.02, y: p.elbowCenter.y + 0.01, z: p.elbowCenter.z },
+            { x: p.elbowCenter.x + 0.025, y: p.elbowCenter.y - 0.035, z: p.elbowCenter.z }
+        ];
+
+        // 2. Biceps Short Head: Coracoid process -> Radial tuberosity
+        paths["biceps_sh"] = [
+            { x: p.shoulderCenter.x + 0.03, y: p.shoulderCenter.y + 0.015, z: p.shoulderCenter.z - 0.015 },
+            { x: 0.5 * (p.shoulderCenter.x + p.elbowCenter.x) + 0.02, y: 0.5 * (p.shoulderCenter.y + p.elbowCenter.y) - 0.02, z: p.shoulderCenter.z - 0.01 },
+            { x: p.elbowCenter.x + 0.025, y: p.elbowCenter.y - 0.035, z: p.elbowCenter.z }
+        ];
+
+        // 3. Brachialis: Anterior lower humerus -> Coronoid process of ulna
+        paths["brachialis"] = [
+            { x: 0.5 * (p.shoulderCenter.x + p.elbowCenter.x) + 0.01, y: 0.5 * (p.shoulderCenter.y + p.elbowCenter.y) - 0.04, z: p.shoulderCenter.z },
+            { x: p.elbowCenter.x + 0.02, y: p.elbowCenter.y, z: p.elbowCenter.z },
+            { x: p.elbowCenter.x + 0.015, y: p.elbowCenter.y - 0.03, z: p.elbowCenter.z }
+        ];
+
+        // 4. Triceps Long Head: Infraglenoid tubercle -> Olecranon process
+        paths["triceps_lh"] = [
+            { x: p.shoulderCenter.x - 0.02, y: p.shoulderCenter.y - 0.015, z: p.shoulderCenter.z },
+            { x: 0.5 * (p.shoulderCenter.x + p.elbowCenter.x) - 0.025, y: 0.5 * (p.shoulderCenter.y + p.elbowCenter.y), z: p.shoulderCenter.z },
+            { x: p.olecranon.x, y: p.olecranon.y, z: p.olecranon.z }
+        ];
+
+        // 5. Triceps Lateral Head: Posterior proximal humerus -> Olecranon process
+        paths["triceps_lat"] = [
+            { x: p.shoulderCenter.x - 0.01, y: p.shoulderCenter.y - 0.06, z: p.shoulderCenter.z + 0.02 },
+            { x: 0.5 * (p.shoulderCenter.x + p.elbowCenter.x) - 0.02, y: 0.5 * (p.shoulderCenter.y + p.elbowCenter.y) - 0.03, z: p.shoulderCenter.z + 0.015 },
+            { x: p.olecranon.x, y: p.olecranon.y, z: p.olecranon.z }
+        ];
+
+        // 6. Triceps Medial Head: Posterior distal humerus -> Olecranon process
+        paths["triceps_med"] = [
+            { x: 0.5 * (p.shoulderCenter.x + p.elbowCenter.x) - 0.01, y: 0.5 * (p.shoulderCenter.y + p.elbowCenter.y) - 0.07, z: p.shoulderCenter.z - 0.015 },
+            { x: p.olecranon.x, y: p.olecranon.y, z: p.olecranon.z }
+        ];
+
+        return paths;
+    }
+
+    computePathLength(pointArray) {
+        let len = 0;
+        for (let i = 0; i < pointArray.length - 1; i++) {
+            const dx = pointArray[i + 1].x - pointArray[i].x;
+            const dy = pointArray[i + 1].y - pointArray[i].y;
+            const dz = pointArray[i + 1].z - pointArray[i].z;
+            len += Math.sqrt(dx * dx + dy * dy + dz * dz);
+        }
+        return len;
+    }
+
+    computeMomentArms(coordName = "elbow_flexion", deltaDeg = 0.5) {
+        const currentCoord = this.coordinates[coordName];
+        const radDelta = (deltaDeg * Math.PI) / 180.0;
+
+        const coordsPlus = { ...this.coordinates, [coordName]: currentCoord + deltaDeg };
+        const kinPlus = this.computeKinematics(coordsPlus);
+        const pathsPlus = this.computeMusclePaths(kinPlus);
+
+        const coordsMinus = { ...this.coordinates, [coordName]: currentCoord - deltaDeg };
+        const kinMinus = this.computeKinematics(coordsMinus);
+        const pathsMinus = this.computeMusclePaths(kinMinus);
+
+        const momentArms = {};
+        for (const muscle of this.muscles) {
+            const lenPlus = this.computePathLength(pathsPlus[muscle.name]);
+            const lenMinus = this.computePathLength(pathsMinus[muscle.name]);
+            const r_rad = -(lenPlus - lenMinus) / (2.0 * radDelta);
+            momentArms[muscle.name] = r_rad;
+        }
+
+        return momentArms;
+    }
+
+    update() {
+        const kin = this.computeKinematics(this.coordinates);
+        const paths = this.computeMusclePaths(kin);
+        const results = {};
+
+        for (const muscle of this.muscles) {
+            const path = paths[muscle.name];
+            const lmt = this.computePathLength(path);
+            const state = muscle.solveEquilibrium(lmt, muscle.activation);
+            results[muscle.name] = { state, path };
+        }
+
+        const elbowMomentArms = this.computeMomentArms("elbow_flexion");
+        const shoulderMomentArms = this.computeMomentArms("shoulder_flexion");
+
+        return {
+            kinematics: kin,
+            muscles: results,
+            momentArms: {
+                elbow: elbowMomentArms,
+                shoulder: shoulderMomentArms
+            }
+        };
+    }
+}
+
+/**
+ * OpenSim Interoperability Engine
+ * Exports and Imports OpenSim .osim XML models and .mot motion trajectory data
+ */
+class OpenSimIO {
+    /**
+     * Export Musculoskeletal System to standard OpenSim 4.x .osim XML format
+     */
+    static exportToOsimXml(system, modelName = "MoSim_Musculoskeletal_Model") {
+        let xml = `<?xml version="1.0" encoding="UTF-8" ?>\n`;
+        xml += `<OpenSimDocument Version="40000">\n`;
+        xml += `  <Model name="${modelName}">\n`;
+        xml += `    <credits>Built with MoSim Next-Generation Web Musculoskeletal Simulator</credits>\n`;
+        xml += `    <publications>Rajagopal et al. 2016 / Holzbaur et al. 2005</publications>\n`;
+        xml += `    <length_units>meters</length_units>\n`;
+        xml += `    <force_units>N</force_units>\n\n`;
+
+        // CoordinateSet
+        xml += `    <CoordinateSet>\n      <objects>\n`;
+        for (const [coordName, cfg] of Object.entries(system.coordLimits)) {
+            xml += `        <Coordinate name="${coordName}">\n`;
+            xml += `          <default_value>${((cfg.default * Math.PI) / 180).toFixed(4)}</default_value>\n`;
+            xml += `          <range>${((cfg.min * Math.PI) / 180).toFixed(4)} ${((cfg.max * Math.PI) / 180).toFixed(4)}</range>\n`;
+            xml += `          <clamped>true</clamped>\n`;
+            xml += `          <locked>false</locked>\n`;
+            xml += `        </Coordinate>\n`;
+        }
+        xml += `      </objects>\n    </CoordinateSet>\n\n`;
+
+        // ForceSet / Millard2012EquilibriumMuscle
+        xml += `    <ForceSet>\n      <objects>\n`;
+        for (const m of system.muscles) {
+            xml += `        <Millard2012EquilibriumMuscle name="${m.name}">\n`;
+            xml += `          <max_isometric_force>${m.maxIsometricForce.toFixed(1)}</max_isometric_force>\n`;
+            xml += `          <optimal_fiber_length>${m.optimalFiberLength.toFixed(4)}</optimal_fiber_length>\n`;
+            xml += `          <tendon_slack_length>${m.tendonSlackLength.toFixed(4)}</tendon_slack_length>\n`;
+            xml += `          <pennation_angle_at_optimal>${m.pennationAngleAtOptimal.toFixed(4)}</pennation_angle_at_optimal>\n`;
+            xml += `          <max_contraction_velocity>${m.maxContractionVelocity.toFixed(1)}</max_contraction_velocity>\n`;
+            xml += `        </Millard2012EquilibriumMuscle>\n`;
+        }
+        xml += `      </objects>\n    </ForceSet>\n`;
+        xml += `  </Model>\n`;
+        xml += `</OpenSimDocument>\n`;
+
+        return xml;
+    }
+
+    /**
+     * Export time series kinematic motion data to OpenSim .mot format
+     */
+    static exportMotionFile(timeArray, coordNames, rowData) {
+        let mot = `Coordinates\n`;
+        mot += `version=1\n`;
+        mot += `nRows=${rowData.length}\n`;
+        mot += `nColumns=${coordNames.length + 1}\n`;
+        mot += `inDegrees=yes\n\n`;
+        mot += `Units are in degrees.\n\n`;
+        mot += `endheader\n`;
+        mot += `time\t${coordNames.join("\t")}\n`;
+
+        for (let i = 0; i < rowData.length; i++) {
+            const t = (timeArray[i] !== undefined ? timeArray[i] : i * 0.02).toFixed(4);
+            const vals = coordNames.map(name => (rowData[i][name] || 0).toFixed(3)).join("\t");
+            mot += `${t}\t${vals}\n`;
+        }
+
+        return mot;
+    }
+}
+
+/**
+ * Forward Dynamics Numerical Integrator (Runge-Kutta 4th Order)
+ * Simulates joint rotational dynamics: I * ddq = tau_muscle - tau_gravity - b * dq
+ */
+class ForwardDynamicsEngine {
+    constructor(inertia = 0.35, damping = 0.15, mass = 4.2, comDist = 0.22) {
+        this.I = inertia; // kg*m^2
+        this.b = damping; // N*m*s/rad
+        this.m = mass; // kg
+        this.d = comDist; // m
+        this.g = 9.81; // m/s^2
+
+        this.q = 0.0; // rad
+        this.dq = 0.0; // rad/s
+    }
+
+    reset(initialAngleDeg = 0) {
+        this.q = (initialAngleDeg * Math.PI) / 180.0;
+        this.dq = 0.0;
+    }
+
+    calcAcceleration(q, dq, muscleTorque) {
+        // Gravity torque opposing flexion
+        const tauGrav = this.m * this.g * this.d * Math.sin(q);
+        const tauDamp = this.b * dq;
+        const ddq = (muscleTorque - tauGrav - tauDamp) / this.I;
+        return ddq;
+    }
+
+    stepRK4(muscleTorque, dt) {
+        const q0 = this.q;
+        const dq0 = this.dq;
+
+        // k1
+        const k1_dq = dq0;
+        const k1_ddq = this.calcAcceleration(q0, dq0, muscleTorque);
+
+        // k2
+        const q_mid1 = q0 + 0.5 * dt * k1_dq;
+        const dq_mid1 = dq0 + 0.5 * dt * k1_ddq;
+        const k2_dq = dq_mid1;
+        const k2_ddq = this.calcAcceleration(q_mid1, dq_mid1, muscleTorque);
+
+        // k3
+        const q_mid2 = q0 + 0.5 * dt * k2_dq;
+        const dq_mid2 = dq0 + 0.5 * dt * k2_ddq;
+        const k3_dq = dq_mid2;
+        const k3_ddq = this.calcAcceleration(q_mid2, dq_mid2, muscleTorque);
+
+        // k4
+        const q_end = q0 + dt * k3_dq;
+        const dq_end = dq0 + dt * k3_ddq;
+        const k4_dq = dq_end;
+        const k4_ddq = this.calcAcceleration(q_end, dq_end, muscleTorque);
+
+        // Update state
+        this.q += (dt / 6.0) * (k1_dq + 2 * k2_dq + 2 * k3_dq + k4_dq);
+        this.dq += (dt / 6.0) * (k1_ddq + 2 * k2_ddq + 2 * k3_ddq + k4_ddq);
+
+        // Joint anatomical limits clamp [0, 140] deg
+        const minQ = 0.0;
+        const maxQ = (140.0 * Math.PI) / 180.0;
+        if (this.q <= minQ) {
+            this.q = minQ;
+            if (this.dq < 0) this.dq = -0.2 * this.dq; // slight bounce
+        } else if (this.q >= maxQ) {
+            this.q = maxQ;
+            if (this.dq > 0) this.dq = -0.2 * this.dq;
+        }
+
+        return (this.q * 180.0) / Math.PI; // degrees
+    }
+}
+
 // Export for browser window and Node modules
 if (typeof window !== "undefined") {
     window.HillMuscleModel = HillMuscleModel;
     window.MusculoskeletalSystem = MusculoskeletalSystem;
+    window.UpperLimbSystem = UpperLimbSystem;
+    window.OpenSimIO = OpenSimIO;
+    window.ForwardDynamicsEngine = ForwardDynamicsEngine;
 }
 if (typeof module !== "undefined" && module.exports) {
-    module.exports = { HillMuscleModel, MusculoskeletalSystem };
+    module.exports = {
+        HillMuscleModel,
+        MusculoskeletalSystem,
+        UpperLimbSystem,
+        OpenSimIO,
+        ForwardDynamicsEngine
+    };
 }
+

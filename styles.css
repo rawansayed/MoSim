@@ -135,6 +135,29 @@ body {
     color: var(--accent-cyan);
 }
 
+.topbar-select {
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-glass);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.topbar-select:hover, .topbar-select:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+
+.topbar-select option {
+    background: #0f172a;
+    color: #fff;
+}
+
 /* ================= Main Workspace Layout ================= */
 .main-workspace {
     flex: 1;

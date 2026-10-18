@@ -270,8 +270,13 @@ class BiomechanicalPlotter {
         ctx.fillText(`Moment Arms: ${jointLabel} Joint (r = -∂l/∂q)`, x0 + pad.left - 60, y0 + 20);
 
         // Get moment arms for the selected joint
-        const coordKey = this.selectedJoint === "hip" ? "hip_flexion" :
-                         this.selectedJoint === "ankle" ? "ankle_angle" : "knee_angle";
+        let coordKey = "knee_angle";
+        if (this.system.modelType === "upper_limb") {
+            coordKey = this.selectedJoint === "shoulder" ? "shoulder_flexion" : "elbow_flexion";
+        } else {
+            coordKey = this.selectedJoint === "hip" ? "hip_flexion" :
+                       this.selectedJoint === "ankle" ? "ankle_angle" : "knee_angle";
+        }
         const momentArms = this.system.computeMomentArms(coordKey);
 
         const muscleNames = Object.keys(momentArms);

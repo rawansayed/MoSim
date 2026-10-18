@@ -1,19 +1,32 @@
 /**
  * MoSim - Next-Generation Virtual Musculoskeletal Simulator
  * Main Application Controller & Three.js 3D Viewport Engine
+ * Features:
+ * 1. Multi-Model Architecture (Lower Extremity Rajagopal 2016 & Upper Limb Holzbaur 2005)
+ * 2. Real-Time 3D WebGL PBR Viewport with Catmull-Rom Dynamic Muscle Bulking Tubes
+ * 3. 3-Element Hill Musculotendon Model & Live Biomechanical Curve Tracking
+ * 4. OpenSim 4.x Interoperability (.osim XML Exporter/Importer & .mot Motion Exporter)
+ * 5. Runge-Kutta 4 Forward Dynamics Physics Engine
+ * 6. Gait Cycle & Kinematic Replay
+ * 7. High-DPI Snapshot Camera Capture
  */
 
 class MoSimApp {
     constructor() {
+        this.currentModelType = "lower_limb"; // "lower_limb" or "upper_limb"
         this.system = new MusculoskeletalSystem();
         this.plotter = null;
-        this.selectedMuscle = this.system.muscles[0]; // Default: Rectus Femoris
+        this.selectedMuscle = this.system.muscles[0];
 
-        // Animation & Gait Cycle
+        // Simulation & Motion state
         this.isPlaying = false;
+        this.isPhysicsMode = false;
         this.simTime = 0.0;
         this.gaitSpeed = 1.0;
-        this.gaitProgress = 0.0; // 0.0 to 1.0 (0% to 100% gait cycle)
+        this.gaitProgress = 0.0;
+
+        // Forward Dynamics Engine
+        this.physicsEngine = new ForwardDynamicsEngine();
 
         // Three.js instances
         this.scene = null;
@@ -24,16 +37,28 @@ class MoSimApp {
         this.muscleMeshes = {};
         this.jointMarkers = {};
 
-        // Normal Gait Kinematics (Rajagopal et al. 2016 normalized walking cycle 0% to 100%)
-        this.gaitData = [
-            { t: 0.00, hip: 28.0, knee: 5.0,  ankle: 0.0 },   // Heel Strike (0%)
-            { t: 0.15, hip: 20.0, knee: 18.0, ankle: -5.0 },  // Loading Response (15%)
-            { t: 0.30, hip: 5.0,  knee: 10.0, ankle: 8.0 },   // Mid-Stance (30%)
-            { t: 0.50, hip: -10.0, knee: 8.0, ankle: 12.0 },  // Terminal Stance (50%)
-            { t: 0.60, hip: -8.0,  knee: 35.0, ankle: -15.0 }, // Toe-Off / Pre-Swing (60%)
-            { t: 0.75, hip: 15.0, knee: 60.0, ankle: -5.0 },  // Mid-Swing (75%)
-            { t: 0.85, hip: 25.0, knee: 30.0, ankle: 0.0 },   // Terminal Swing (85%)
-            { t: 1.00, hip: 28.0, knee: 5.0,  ankle: 0.0 }    // Heel Strike (100%)
+        // Recorded Motion Trajectory for OpenSim .mot export
+        this.recordedTrajectory = [];
+
+        // Lower Limb Gait Kinematics (Rajagopal et al. 2016)
+        this.gaitDataLower = [
+            { t: 0.00, hip_flexion: 28.0, knee_angle: 5.0,  ankle_angle: 0.0 },
+            { t: 0.15, hip_flexion: 20.0, knee_angle: 18.0, ankle_angle: -5.0 },
+            { t: 0.30, hip_flexion: 5.0,  knee_angle: 10.0, ankle_angle: 8.0 },
+            { t: 0.50, hip_flexion: -10.0, knee_angle: 8.0, ankle_angle: 12.0 },
+            { t: 0.60, hip_flexion: -8.0,  knee_angle: 35.0, ankle_angle: -15.0 },
+            { t: 0.75, hip_flexion: 15.0, knee_angle: 60.0, ankle_angle: -5.0 },
+            { t: 0.85, hip_flexion: 25.0, knee_angle: 30.0, ankle_angle: 0.0 },
+            { t: 1.00, hip_flexion: 28.0, knee_angle: 5.0,  ankle_angle: 0.0 }
+        ];
+
+        // Upper Limb Arm Curl / Flexion Cycle
+        this.gaitDataUpper = [
+            { t: 0.00, shoulder_flexion: 0.0,  elbow_flexion: 10.0,  pro_sup: 0.0 },
+            { t: 0.25, shoulder_flexion: 15.0, elbow_flexion: 55.0,  pro_sup: 20.0 },
+            { t: 0.50, shoulder_flexion: 25.0, elbow_flexion: 115.0, pro_sup: 45.0 },
+            { t: 0.75, shoulder_flexion: 15.0, elbow_flexion: 65.0,  pro_sup: 20.0 },
+            { t: 1.00, shoulder_flexion: 0.0,  elbow_flexion: 10.0,  pro_sup: 0.0 }
         ];
 
         this.init();
@@ -41,8 +66,7 @@ class MoSimApp {
 
     init() {
         this.initThreeJS();
-        this.createSkeletalBones();
-        this.createMuscleTubes();
+        this.buildCurrentModel();
         this.initUI();
         this.initPlotter();
         this.updateSimulation();
@@ -60,20 +84,24 @@ class MoSimApp {
         // Scene
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x0a0f1d);
-        this.scene.fog = new THREE.FogExp2(0x0a0f1d, 0.25);
+        this.scene.fog = new THREE.FogExp2(0x0a0f1d, 0.22);
 
         // Camera
         this.camera = new THREE.PerspectiveCamera(45, width / height, 0.05, 50);
         this.camera.position.set(1.4, 0.1, 1.6);
 
-        // Renderer
-        this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        // Renderer with High Dynamic Range & Shadows
+        this.renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            preserveDrawingBuffer: true, // Allows snapshot PNG export
+            powerPreference: "high-performance"
+        });
         this.renderer.setSize(width, height);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.1;
+        this.renderer.toneMappingExposure = 1.15;
         container.appendChild(this.renderer.domElement);
 
         // OrbitControls
@@ -81,10 +109,10 @@ class MoSimApp {
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.08;
         this.controls.target.set(0.0, -0.4, 0.0);
-        this.controls.maxPolarAngle = Math.PI / 2 + 0.05; // Don't clip under ground
+        this.controls.maxPolarAngle = Math.PI / 2 + 0.05;
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        // Studio Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
         this.scene.add(ambientLight);
 
         const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
@@ -94,20 +122,19 @@ class MoSimApp {
         keyLight.shadow.mapSize.height = 1024;
         this.scene.add(keyLight);
 
-        const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.9); // Cool rim light
+        const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.95);
         rimLight.position.set(-3, 2, -3);
         this.scene.add(rimLight);
 
-        const fillLight = new THREE.DirectionalLight(0xf43f5e, 0.3); // Warm fill
+        const fillLight = new THREE.DirectionalLight(0xf43f5e, 0.35);
         fillLight.position.set(0, -2, 2);
         this.scene.add(fillLight);
 
-        // Biomechanical Ground Plane with Grid
+        // Biomechanical Ground Plane
         const gridHelper = new THREE.GridHelper(3.0, 30, 0x38bdf8, 0x1e293b);
         gridHelper.position.y = -0.98;
         this.scene.add(gridHelper);
 
-        // Ground shadow receiver
         const shadowGeo = new THREE.PlaneGeometry(3.0, 3.0);
         const shadowMat = new THREE.ShadowMaterial({ opacity: 0.35 });
         const groundShadow = new THREE.Mesh(shadowGeo, shadowMat);
@@ -128,16 +155,56 @@ class MoSimApp {
     }
 
     /**
-     * Create Anatomical Bone Meshes (Pelvis, Femur, Tibia, Patella, Foot)
+     * Clear existing 3D meshes when switching models
      */
-    createSkeletalBones() {
+    clearModelMeshes() {
+        for (const [key, mesh] of Object.entries(this.boneMeshes)) {
+            this.scene.remove(mesh);
+        }
+        for (const [key, mesh] of Object.entries(this.muscleMeshes)) {
+            this.scene.remove(mesh);
+        }
+        for (const [key, marker] of Object.entries(this.jointMarkers)) {
+            this.scene.remove(marker);
+        }
+        this.boneMeshes = {};
+        this.muscleMeshes = {};
+        this.jointMarkers = {};
+    }
+
+    /**
+     * Build the currently active musculoskeletal model (Lower Extremity or Upper Limb)
+     */
+    buildCurrentModel() {
+        this.clearModelMeshes();
+
+        if (this.currentModelType === "lower_limb") {
+            this.system = new MusculoskeletalSystem();
+            this.createLowerLimbBones();
+            this.controls.target.set(0.0, -0.4, 0.0);
+            this.camera.position.set(1.4, 0.1, 1.6);
+        } else {
+            this.system = new UpperLimbSystem();
+            this.createUpperLimbBones();
+            this.controls.target.set(0.0, -0.2, 0.0);
+            this.camera.position.set(1.2, 0.1, 1.2);
+        }
+
+        this.controls.update();
+        this.selectedMuscle = this.system.muscles[0];
+        this.createMuscleTubes();
+        this.physicsEngine.reset(this.system.coordinates[Object.keys(this.system.coordinates)[0]]);
+    }
+
+    /**
+     * Create Anatomical Lower Limb Bones (Pelvis, Femur, Patella, Tibia, Foot)
+     */
+    createLowerLimbBones() {
         const boneMaterial = new THREE.MeshStandardMaterial({
             color: 0xf1f5f9,
             roughness: 0.35,
-            metalness: 0.05,
-            flatShading: false
+            metalness: 0.05
         });
-
         const jointMaterial = new THREE.MeshStandardMaterial({
             color: 0x38bdf8,
             roughness: 0.2,
@@ -146,21 +213,19 @@ class MoSimApp {
             emissiveIntensity: 0.3
         });
 
-        // 1. Pelvis Mesh (Composite realistic anatomical shape)
+        // 1. Pelvis
         const pelvisGroup = new THREE.Group();
         const sacrumGeo = new THREE.CylinderGeometry(0.04, 0.02, 0.12, 16);
         const sacrum = new THREE.Mesh(sacrumGeo, boneMaterial);
         sacrum.rotation.x = 0.2;
         pelvisGroup.add(sacrum);
 
-        // Iliac wings (left & right)
         const iliumGeo = new THREE.TorusGeometry(0.08, 0.025, 12, 24, Math.PI * 0.9);
         const iliumRight = new THREE.Mesh(iliumGeo, boneMaterial);
         iliumRight.position.set(0.08, 0.04, 0);
         iliumRight.rotation.z = -0.4;
         pelvisGroup.add(iliumRight);
 
-        // Pubic arch
         const pubisGeo = new THREE.TorusGeometry(0.06, 0.02, 8, 16, Math.PI * 0.7);
         const pubis = new THREE.Mesh(pubisGeo, boneMaterial);
         pubis.position.set(0.04, -0.06, 0.03);
@@ -170,7 +235,7 @@ class MoSimApp {
         this.scene.add(pelvisGroup);
         this.boneMeshes.pelvis = pelvisGroup;
 
-        // 2. Femur (Thigh bone)
+        // 2. Femur
         const femurGroup = new THREE.Group();
         const femurShaftGeo = new THREE.CylinderGeometry(0.024, 0.020, 0.40, 16);
         const femurShaft = new THREE.Mesh(femurShaftGeo, boneMaterial);
@@ -178,19 +243,16 @@ class MoSimApp {
         femurShaft.castShadow = true;
         femurGroup.add(femurShaft);
 
-        // Femoral Head (Ball of hip joint)
         const headGeo = new THREE.SphereGeometry(0.032, 24, 24);
         const femoralHead = new THREE.Mesh(headGeo, boneMaterial);
         femoralHead.position.set(-0.02, 0.01, 0.0);
         femurGroup.add(femoralHead);
 
-        // Greater trochanter
         const trochGeo = new THREE.SphereGeometry(0.026, 16, 16);
         const trochanter = new THREE.Mesh(trochGeo, boneMaterial);
         trochanter.position.set(0.035, -0.03, 0.03);
         femurGroup.add(trochanter);
 
-        // Femoral Condyles (Knee joint surface)
         const condyleGeo = new THREE.CylinderGeometry(0.036, 0.036, 0.07, 16);
         const condyles = new THREE.Mesh(condyleGeo, boneMaterial);
         condyles.position.set(0, -0.40, 0);
@@ -200,14 +262,14 @@ class MoSimApp {
         this.scene.add(femurGroup);
         this.boneMeshes.femur = femurGroup;
 
-        // 3. Patella (Kneecap)
+        // 3. Patella
         const patellaGeo = new THREE.SphereGeometry(0.025, 16, 16);
         patellaGeo.scale(1.0, 1.2, 0.6);
         const patella = new THREE.Mesh(patellaGeo, boneMaterial);
         this.scene.add(patella);
         this.boneMeshes.patella = patella;
 
-        // 4. Tibia & Fibula (Shin bones)
+        // 4. Tibia & Fibula
         const tibiaGroup = new THREE.Group();
         const plateauGeo = new THREE.CylinderGeometry(0.038, 0.030, 0.04, 16);
         const plateau = new THREE.Mesh(plateauGeo, boneMaterial);
@@ -219,13 +281,11 @@ class MoSimApp {
         tibiaShaft.castShadow = true;
         tibiaGroup.add(tibiaShaft);
 
-        // Fibula (lateral slender bone)
         const fibulaGeo = new THREE.CylinderGeometry(0.008, 0.007, 0.37, 12);
         const fibula = new THREE.Mesh(fibulaGeo, boneMaterial);
         fibula.position.set(0, -0.19, 0.038);
         tibiaGroup.add(fibula);
 
-        // Malleoli (ankle joint)
         const malleolusGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.065, 16);
         const malleoli = new THREE.Mesh(malleolusGeo, boneMaterial);
         malleoli.position.set(0, -0.38, 0);
@@ -235,24 +295,19 @@ class MoSimApp {
         this.scene.add(tibiaGroup);
         this.boneMeshes.tibia = tibiaGroup;
 
-        // 5. Foot (Calcaneus, Metatarsals, Toes)
+        // 5. Foot
         const footGroup = new THREE.Group();
-        // Calcaneus (Heel)
         const heelGeo = new THREE.BoxGeometry(0.08, 0.05, 0.06);
         const heel = new THREE.Mesh(heelGeo, boneMaterial);
         heel.position.set(-0.04, -0.025, 0);
-        heel.castShadow = true;
         footGroup.add(heel);
 
-        // Midfoot / Arch
         const archGeo = new THREE.CylinderGeometry(0.025, 0.035, 0.14, 12);
         const arch = new THREE.Mesh(archGeo, boneMaterial);
         arch.position.set(0.06, -0.025, 0);
         arch.rotation.z = Math.PI / 2;
-        arch.castShadow = true;
         footGroup.add(arch);
 
-        // Toes
         const toesGeo = new THREE.BoxGeometry(0.06, 0.025, 0.07);
         const toes = new THREE.Mesh(toesGeo, boneMaterial);
         toes.position.set(0.15, -0.035, 0);
@@ -261,7 +316,7 @@ class MoSimApp {
         this.scene.add(footGroup);
         this.boneMeshes.foot = footGroup;
 
-        // Visual joint pivot markers
+        // Joint Markers
         const jointSphereGeo = new THREE.SphereGeometry(0.015, 16, 16);
         const hipPivot = new THREE.Mesh(jointSphereGeo, jointMaterial);
         const kneePivot = new THREE.Mesh(jointSphereGeo, jointMaterial);
@@ -273,16 +328,109 @@ class MoSimApp {
     }
 
     /**
-     * Create 3D Smooth Tubular Muscle Meshes (Catmull-Rom Curves)
+     * Create Anatomical Upper Limb Bones (Scapula, Humerus, Radius, Ulna, Hand)
+     */
+    createUpperLimbBones() {
+        const boneMaterial = new THREE.MeshStandardMaterial({
+            color: 0xf1f5f9,
+            roughness: 0.35,
+            metalness: 0.05
+        });
+        const jointMaterial = new THREE.MeshStandardMaterial({
+            color: 0x38bdf8,
+            roughness: 0.2,
+            metalness: 0.6,
+            emissive: 0x0284c7,
+            emissiveIntensity: 0.3
+        });
+
+        // 1. Scapula / Clavicle Root
+        const scapulaGroup = new THREE.Group();
+        const glenoidGeo = new THREE.SphereGeometry(0.035, 16, 16);
+        const glenoid = new THREE.Mesh(glenoidGeo, boneMaterial);
+        scapulaGroup.add(glenoid);
+
+        const bladeGeo = new THREE.BoxGeometry(0.12, 0.14, 0.02);
+        const blade = new THREE.Mesh(bladeGeo, boneMaterial);
+        blade.position.set(-0.06, 0.03, -0.04);
+        scapulaGroup.add(blade);
+
+        this.scene.add(scapulaGroup);
+        this.boneMeshes.scapula = scapulaGroup;
+
+        // 2. Humerus
+        const humerusGroup = new THREE.Group();
+        const humerusShaftGeo = new THREE.CylinderGeometry(0.018, 0.016, 0.30, 16);
+        const humerusShaft = new THREE.Mesh(humerusShaftGeo, boneMaterial);
+        humerusShaft.position.y = -0.15;
+        humerusShaft.castShadow = true;
+        humerusGroup.add(humerusShaft);
+
+        const humeralHeadGeo = new THREE.SphereGeometry(0.028, 16, 16);
+        const humeralHead = new THREE.Mesh(humeralHeadGeo, boneMaterial);
+        humerusGroup.add(humeralHead);
+
+        const condylesGeo = new THREE.CylinderGeometry(0.024, 0.024, 0.05, 16);
+        const condyles = new THREE.Mesh(condylesGeo, boneMaterial);
+        condyles.position.set(0, -0.30, 0);
+        condyles.rotation.z = Math.PI / 2;
+        humerusGroup.add(condyles);
+
+        this.scene.add(humerusGroup);
+        this.boneMeshes.humerus = humerusGroup;
+
+        // 3. Forearm (Radius & Ulna)
+        const forearmGroup = new THREE.Group();
+        const ulnaGeo = new THREE.CylinderGeometry(0.014, 0.011, 0.26, 16);
+        const ulna = new THREE.Mesh(ulnaGeo, boneMaterial);
+        ulna.position.set(-0.012, -0.13, 0);
+        ulna.castShadow = true;
+        forearmGroup.add(ulna);
+
+        const radiusGeo = new THREE.CylinderGeometry(0.013, 0.010, 0.25, 16);
+        const radius = new THREE.Mesh(radiusGeo, boneMaterial);
+        radius.position.set(0.014, -0.13, 0);
+        radius.castShadow = true;
+        forearmGroup.add(radius);
+
+        // Olecranon process
+        const olecranonGeo = new THREE.BoxGeometry(0.025, 0.035, 0.025);
+        const olecranon = new THREE.Mesh(olecranonGeo, boneMaterial);
+        olecranon.position.set(-0.012, 0.01, 0);
+        forearmGroup.add(olecranon);
+
+        this.scene.add(forearmGroup);
+        this.boneMeshes.forearm = forearmGroup;
+
+        // 4. Hand
+        const handGroup = new THREE.Group();
+        const palmGeo = new THREE.BoxGeometry(0.04, 0.08, 0.02);
+        const palm = new THREE.Mesh(palmGeo, boneMaterial);
+        palm.position.y = -0.04;
+        handGroup.add(palm);
+
+        this.scene.add(handGroup);
+        this.boneMeshes.hand = handGroup;
+
+        // Joint Pivots
+        const jointSphereGeo = new THREE.SphereGeometry(0.014, 16, 16);
+        const shoulderPivot = new THREE.Mesh(jointSphereGeo, jointMaterial);
+        const elbowPivot = new THREE.Mesh(jointSphereGeo, jointMaterial);
+        this.scene.add(shoulderPivot);
+        this.scene.add(elbowPivot);
+        this.jointMarkers = { shoulder: shoulderPivot, elbow: elbowPivot };
+    }
+
+    /**
+     * Create 3D Smooth Tubular Muscle Meshes
      */
     createMuscleTubes() {
         for (const muscle of this.system.muscles) {
-            // Material with dynamic tension color
             const material = new THREE.MeshStandardMaterial({
-                color: 0xef4444, // Crimson muscle red
+                color: 0xef4444,
                 roughness: 0.35,
                 metalness: 0.15,
-                emissive: 0x991b1b,
+                emissive: 0x881337,
                 emissiveIntensity: 0.2
             });
 
@@ -294,55 +442,69 @@ class MoSimApp {
     }
 
     /**
-     * Update 3D Skeletal and Musculotendon geometry from Kinematics Engine
+     * Update 3D Geometry and Kinematics
      */
     updateSimulation() {
         const updateData = this.system.update();
         const kin = updateData.kinematics;
         const muscleResults = updateData.muscles;
 
-        // 1. Position Pelvis
-        this.boneMeshes.pelvis.position.set(0, 0, 0);
+        if (this.currentModelType === "lower_limb") {
+            // Lower limb updates
+            this.boneMeshes.pelvis.position.set(0, 0, 0);
 
-        // 2. Position & Orient Femur
-        const femur = this.boneMeshes.femur;
-        femur.position.set(kin.hipCenter.x, kin.hipCenter.y, kin.hipCenter.z);
+            const femur = this.boneMeshes.femur;
+            femur.position.set(kin.hipCenter.x, kin.hipCenter.y, kin.hipCenter.z);
+            femur.rotation.set(0, 0, 0);
+            femur.rotateZ(kin.anglesRad.qHipFlex);
+            femur.rotateX(kin.anglesRad.qHipAdd);
+            femur.rotateY(kin.anglesRad.qHipRot);
 
-        // Femur orientation from hip angles
-        const qHipFlex = kin.anglesRad.qHipFlex;
-        const qHipAdd = kin.anglesRad.qHipAdd;
-        const qHipRot = kin.anglesRad.qHipRot;
-        femur.rotation.set(0, 0, 0);
-        femur.rotateZ(qHipFlex);
-        femur.rotateX(qHipAdd);
-        femur.rotateY(qHipRot);
+            const tibia = this.boneMeshes.tibia;
+            tibia.position.set(kin.kneeCenter.x, kin.kneeCenter.y, kin.kneeCenter.z);
+            const totalKneeFlex = kin.anglesRad.qHipFlex - kin.anglesRad.qKnee;
+            tibia.rotation.set(0, 0, 0);
+            tibia.rotateZ(totalKneeFlex);
+            tibia.rotateX(kin.anglesRad.qHipAdd);
 
-        // 3. Position & Orient Tibia
-        const tibia = this.boneMeshes.tibia;
-        tibia.position.set(kin.kneeCenter.x, kin.kneeCenter.y, kin.kneeCenter.z);
-        const totalKneeFlex = qHipFlex - kin.anglesRad.qKnee;
-        tibia.rotation.set(0, 0, 0);
-        tibia.rotateZ(totalKneeFlex);
-        tibia.rotateX(qHipAdd);
+            const patella = this.boneMeshes.patella;
+            patella.position.set(kin.patellaCenter.x, kin.patellaCenter.y, kin.patellaCenter.z);
+            patella.rotation.set(0, 0, totalKneeFlex + 0.2);
 
-        // 4. Position Patella
-        const patella = this.boneMeshes.patella;
-        patella.position.set(kin.patellaCenter.x, kin.patellaCenter.y, kin.patellaCenter.z);
-        patella.rotation.set(0, 0, totalKneeFlex + 0.2);
+            const foot = this.boneMeshes.foot;
+            foot.position.set(kin.ankleCenter.x, kin.ankleCenter.y, kin.ankleCenter.z);
+            const totalFootAngle = totalKneeFlex - kin.anglesRad.qAnkle;
+            foot.rotation.set(0, 0, totalFootAngle);
+            foot.rotateX(kin.anglesRad.qHipAdd);
 
-        // 5. Position Foot
-        const foot = this.boneMeshes.foot;
-        foot.position.set(kin.ankleCenter.x, kin.ankleCenter.y, kin.ankleCenter.z);
-        const totalFootAngle = totalKneeFlex - kin.anglesRad.qAnkle;
-        foot.rotation.set(0, 0, totalFootAngle);
-        foot.rotateX(qHipAdd);
+            this.jointMarkers.hip.position.set(kin.hipCenter.x, kin.hipCenter.y, kin.hipCenter.z);
+            this.jointMarkers.knee.position.set(kin.kneeCenter.x, kin.kneeCenter.y, kin.kneeCenter.z);
+            this.jointMarkers.ankle.position.set(kin.ankleCenter.x, kin.ankleCenter.y, kin.ankleCenter.z);
+        } else {
+            // Upper limb updates
+            this.boneMeshes.scapula.position.set(0, 0, 0);
 
-        // 6. Update Joint Pivot Markers
-        this.jointMarkers.hip.position.set(kin.hipCenter.x, kin.hipCenter.y, kin.hipCenter.z);
-        this.jointMarkers.knee.position.set(kin.kneeCenter.x, kin.kneeCenter.y, kin.kneeCenter.z);
-        this.jointMarkers.ankle.position.set(kin.ankleCenter.x, kin.ankleCenter.y, kin.ankleCenter.z);
+            const humerus = this.boneMeshes.humerus;
+            humerus.position.set(kin.shoulderCenter.x, kin.shoulderCenter.y, kin.shoulderCenter.z);
+            humerus.rotation.set(0, 0, 0);
+            humerus.rotateZ(kin.anglesRad.qShoulder);
 
-        // 7. Update Muscle Tubes (Catmull-Rom Curves & Dynamic Bulking)
+            const forearm = this.boneMeshes.forearm;
+            forearm.position.set(kin.elbowCenter.x, kin.elbowCenter.y, kin.elbowCenter.z);
+            const totalElbow = kin.anglesRad.qShoulder - kin.anglesRad.qElbow;
+            forearm.rotation.set(0, 0, 0);
+            forearm.rotateZ(totalElbow);
+            forearm.rotateY(kin.anglesRad.qProSup);
+
+            const hand = this.boneMeshes.hand;
+            hand.position.set(kin.wristCenter.x, kin.wristCenter.y, kin.wristCenter.z);
+            hand.rotation.set(0, 0, totalElbow);
+
+            this.jointMarkers.shoulder.position.set(kin.shoulderCenter.x, kin.shoulderCenter.y, kin.shoulderCenter.z);
+            this.jointMarkers.elbow.position.set(kin.elbowCenter.x, kin.elbowCenter.y, kin.elbowCenter.z);
+        }
+
+        // Update Muscle Tubes (Catmull-Rom Curves & Dynamic Bulking)
         for (const muscle of this.system.muscles) {
             const mData = muscleResults[muscle.name];
             const mesh = this.muscleMeshes[muscle.name];
@@ -351,58 +513,53 @@ class MoSimApp {
             const pathPoints = mData.path.map(p => new THREE.Vector3(p.x, p.y, p.z));
             const curve = new THREE.CatmullRomCurve3(pathPoints);
 
-            // Dynamic muscle bulking radius: preserves muscle belly volume
-            // r = r0 * sqrt(1 / normLm) * (1 + 0.3 * activation)
             const normLm = mData.state.normFiberLength || 1.0;
             const baseRadius = 0.012;
             const bulkingFactor = Math.sqrt(1.0 / Math.max(0.5, normLm)) * (1.0 + 0.35 * muscle.activation);
             const tubeRadius = baseRadius * bulkingFactor;
 
-            // Dispose old geometry
             if (mesh.geometry) mesh.geometry.dispose();
-            mesh.geometry = new THREE.TubeGeometry(curve, 28, tubeRadius, 10, false);
+            mesh.geometry = new THREE.TubeGeometry(curve, 26, tubeRadius, 10, false);
 
-            // Color gradient based on activation and tension
             const act = muscle.activation;
             const isSelected = this.selectedMuscle && this.selectedMuscle.name === muscle.name;
 
             if (isSelected) {
-                mesh.material.color.setHex(0xfacc15); // Glowing gold for selected
+                mesh.material.color.setHex(0xfacc15);
                 mesh.material.emissive.setHex(0xeab308);
-                mesh.material.emissiveIntensity = 0.4 + 0.4 * act;
+                mesh.material.emissiveIntensity = 0.45 + 0.4 * act;
             } else if (act > 0.4) {
-                mesh.material.color.setHex(0xf97316); // Hot orange for high contraction
+                mesh.material.color.setHex(0xf97316);
                 mesh.material.emissive.setHex(0xe11d48);
-                mesh.material.emissiveIntensity = 0.3 + 0.4 * act;
+                mesh.material.emissiveIntensity = 0.35 + 0.4 * act;
             } else {
-                mesh.material.color.setHex(0xef4444); // Crimson for resting
+                mesh.material.color.setHex(0xef4444);
                 mesh.material.emissive.setHex(0x881337);
-                mesh.material.emissiveIntensity = 0.15;
+                mesh.material.emissiveIntensity = 0.18;
             }
         }
 
-        // Update UI Readouts
         this.updateTelemetryReadouts(updateData);
 
-        // Update Biomechanical Plotter
         if (this.plotter) {
             this.plotter.render();
+        }
+
+        // Record trajectory row if playing
+        if (this.isPlaying) {
+            this.recordedTrajectory.push({ ...this.system.coordinates });
         }
     }
 
     /**
-     * Update Telemetry Panels (Force readouts, moment arms, angle numbers)
+     * Update Telemetry Panels
      */
     updateTelemetryReadouts(updateData) {
-        // Update angle display badges
         for (const [key, val] of Object.entries(this.system.coordinates)) {
             const badge = document.getElementById(`val-${key}`);
-            if (badge) {
-                badge.innerText = `${val.toFixed(1)}°`;
-            }
+            if (badge) badge.innerText = `${val.toFixed(1)}°`;
         }
 
-        // Update selected muscle telemetry HUD
         if (this.selectedMuscle) {
             const mData = updateData.muscles[this.selectedMuscle.name];
             if (mData) {
@@ -418,26 +575,49 @@ class MoSimApp {
             }
         }
 
-        // Update Model Tree list force badges
         for (const muscle of this.system.muscles) {
             const badge = document.getElementById(`tree-force-${muscle.name}`);
-            if (badge) {
-                badge.innerText = `${muscle.totalForce.toFixed(0)} N`;
-            }
+            if (badge) badge.innerText = `${muscle.totalForce.toFixed(0)} N`;
         }
     }
 
     /**
-     * Initialize UI Sliders, Buttons, and Tree Event Listeners
+     * Switch Active Model between Lower Limb and Upper Limb
      */
-    initUI() {
-        // 1. Coordinate Sliders
-        for (const [key, cfg] of Object.entries(this.system.coordLimits)) {
-            const slider = document.getElementById(`slider-${key}`);
-            if (slider) {
-                slider.min = cfg.min;
-                slider.max = cfg.max;
-                slider.value = this.system.coordinates[key];
+    switchModel(modelKey) {
+        if (this.currentModelType === modelKey) return;
+        this.currentModelType = modelKey;
+        this.buildCurrentModel();
+        this.rebindUI();
+        if (this.plotter) {
+            const defaultJoint = modelKey === "lower_limb" ? "knee" : "elbow";
+            this.plotter.setSelectedJoint(defaultJoint);
+            this.plotter.setTarget(this.selectedMuscle, this.system);
+        }
+        this.updateSimulation();
+    }
+
+    /**
+     * Rebind UI Elements when switching models
+     */
+    rebindUI() {
+        // 1. Rebuild coordinate sliders container
+        const coordContainer = document.getElementById("coords-sliders-container");
+        if (coordContainer) {
+            coordContainer.innerHTML = "";
+            for (const [key, cfg] of Object.entries(this.system.coordLimits)) {
+                const div = document.createElement("div");
+                div.className = "slider-item";
+                div.innerHTML = `
+                    <div class="slider-header">
+                        <span class="slider-name">${cfg.label}</span>
+                        <span class="slider-val" id="val-${key}">${this.system.coordinates[key].toFixed(1)}°</span>
+                    </div>
+                    <input type="range" class="coord-slider" id="slider-${key}" min="${cfg.min}" max="${cfg.max}" value="${this.system.coordinates[key]}" step="0.5">
+                `;
+                coordContainer.appendChild(div);
+
+                const slider = div.querySelector(`#slider-${key}`);
                 slider.addEventListener("input", (e) => {
                     this.system.coordinates[key] = parseFloat(e.target.value);
                     this.updateSimulation();
@@ -445,7 +625,7 @@ class MoSimApp {
             }
         }
 
-        // 2. Muscle Excitation Sliders
+        // 2. Rebuild muscle excitation sliders
         const stimContainer = document.getElementById("stim-sliders-container");
         if (stimContainer) {
             stimContainer.innerHTML = "";
@@ -455,9 +635,9 @@ class MoSimApp {
                 div.innerHTML = `
                     <div class="slider-header">
                         <span class="slider-name">${muscle.displayName.split("(")[0]}</span>
-                        <span class="slider-val" id="stim-val-${muscle.name}">5%</span>
+                        <span class="slider-val" id="stim-val-${muscle.name}">${(muscle.activation * 100).toFixed(0)}%</span>
                     </div>
-                    <input type="range" class="coord-slider" id="stim-${muscle.name}" min="0" max="100" value="5">
+                    <input type="range" class="coord-slider" id="stim-${muscle.name}" min="0" max="100" value="${(muscle.activation * 100).toFixed(0)}">
                 `;
                 stimContainer.appendChild(div);
 
@@ -471,7 +651,7 @@ class MoSimApp {
             }
         }
 
-        // 3. Model Hierarchy Explorer Items
+        // 3. Rebuild Model Tree Hierarchy
         const treeList = document.getElementById("muscle-tree-list");
         if (treeList) {
             treeList.innerHTML = "";
@@ -486,14 +666,54 @@ class MoSimApp {
                     </div>
                     <span class="tree-badge" id="tree-force-${muscle.name}">${muscle.totalForce.toFixed(0)} N</span>
                 `;
-                li.addEventListener("click", () => {
-                    this.selectMuscle(muscle);
-                });
+                li.addEventListener("click", () => this.selectMuscle(muscle));
                 treeList.appendChild(li);
             }
         }
 
-        // 4. Biomechanical Preset Postures
+        // 4. Update Joint filter buttons in bottom HUD
+        const jointFilterBar = document.querySelector(".joint-filter-bar");
+        if (jointFilterBar) {
+            if (this.currentModelType === "lower_limb") {
+                jointFilterBar.innerHTML = `
+                    <span style="font-size: 10px; color: var(--text-muted); align-self: center; margin-right: 4px;">Moment Arm Joint:</span>
+                    <button class="btn-joint-select active" data-joint="knee">Knee</button>
+                    <button class="btn-joint-select" data-joint="hip">Hip</button>
+                    <button class="btn-joint-select" data-joint="ankle">Ankle</button>
+                `;
+            } else {
+                jointFilterBar.innerHTML = `
+                    <span style="font-size: 10px; color: var(--text-muted); align-self: center; margin-right: 4px;">Moment Arm Joint:</span>
+                    <button class="btn-joint-select active" data-joint="elbow">Elbow</button>
+                    <button class="btn-joint-select" data-joint="shoulder">Shoulder</button>
+                `;
+            }
+
+            jointFilterBar.querySelectorAll(".btn-joint-select").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    jointFilterBar.querySelectorAll(".btn-joint-select").forEach(b => b.classList.remove("active"));
+                    e.target.classList.add("active");
+                    if (this.plotter) this.plotter.setSelectedJoint(e.target.dataset.joint);
+                });
+            });
+        }
+    }
+
+    /**
+     * Initialize UI Sliders, Buttons, and Tree Event Listeners
+     */
+    initUI() {
+        this.rebindUI();
+
+        // Model Switcher Selector
+        const modelSelect = document.getElementById("select-model");
+        if (modelSelect) {
+            modelSelect.addEventListener("change", (e) => {
+                this.switchModel(e.target.value);
+            });
+        }
+
+        // Biomechanical Preset Postures
         document.querySelectorAll(".btn-preset").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const preset = e.target.dataset.preset;
@@ -501,12 +721,12 @@ class MoSimApp {
             });
         });
 
-        // 5. Gait Playback Controls
+        // Motion Simulation Controls
         const playBtn = document.getElementById("btn-play-gait");
         if (playBtn) {
             playBtn.addEventListener("click", () => {
                 this.isPlaying = !this.isPlaying;
-                playBtn.innerHTML = this.isPlaying ? "❚❚ Pause Gait" : "▶ Play Gait";
+                playBtn.innerHTML = this.isPlaying ? "❚❚ Pause Motion" : "▶ Play Motion";
                 playBtn.classList.toggle("btn-active", this.isPlaying);
             });
         }
@@ -518,15 +738,14 @@ class MoSimApp {
             });
         }
 
-        // 6. Camera Presets
+        // Camera Presets
         document.querySelectorAll(".btn-cam").forEach(btn => {
             btn.addEventListener("click", (e) => {
-                const view = e.target.dataset.view;
-                this.setCameraPreset(view);
+                this.setCameraPreset(e.target.dataset.view);
             });
         });
 
-        // 7. Static Optimization Trigger
+        // Static Optimization Trigger
         const btnSolveSO = document.getElementById("btn-solve-so");
         if (btnSolveSO) {
             btnSolveSO.addEventListener("click", () => {
@@ -534,16 +753,39 @@ class MoSimApp {
             });
         }
 
-        // 8. Joint selector for moment arm chart
-        document.querySelectorAll(".btn-joint-select").forEach(btn => {
-            btn.addEventListener("click", (e) => {
-                document.querySelectorAll(".btn-joint-select").forEach(b => b.classList.remove("active"));
-                e.target.classList.add("active");
-                if (this.plotter) {
-                    this.plotter.setSelectedJoint(e.target.dataset.joint);
-                }
+        // Forward Dynamics Physics Toggle
+        const btnPhysics = document.getElementById("btn-toggle-physics");
+        if (btnPhysics) {
+            btnPhysics.addEventListener("click", () => {
+                this.isPhysicsMode = !this.isPhysicsMode;
+                btnPhysics.classList.toggle("btn-active", this.isPhysicsMode);
+                btnPhysics.innerHTML = this.isPhysicsMode ? "⚡ Physics: Active (RK4)" : "⚡ Forward Dynamics";
             });
-        });
+        }
+
+        // OpenSim .osim XML Export Trigger
+        const btnExportOsim = document.getElementById("btn-export-osim");
+        if (btnExportOsim) {
+            btnExportOsim.addEventListener("click", () => {
+                this.exportOpenSimModel();
+            });
+        }
+
+        // OpenSim .mot Motion Export Trigger
+        const btnExportMot = document.getElementById("btn-export-mot");
+        if (btnExportMot) {
+            btnExportMot.addEventListener("click", () => {
+                this.exportMotionTrajectory();
+            });
+        }
+
+        // 3D Canvas Snapshot Download Trigger
+        const btnSnapshot = document.getElementById("btn-snapshot");
+        if (btnSnapshot) {
+            btnSnapshot.addEventListener("click", () => {
+                this.captureSnapshot();
+            });
+        }
     }
 
     /**
@@ -576,20 +818,33 @@ class MoSimApp {
      * Apply Clinical / Biomechanical Posture Presets
      */
     applyPreset(name) {
-        const targets = {
-            neutral: { hip_flexion: 0, hip_adduction: 0, hip_rotation: 0, knee_angle: 0, ankle_angle: 0 },
-            mid_stance: { hip_flexion: 5, hip_adduction: 2, hip_rotation: 0, knee_angle: 12, ankle_angle: 8 },
-            toe_off: { hip_flexion: -10, hip_adduction: -2, hip_rotation: 0, knee_angle: 35, ankle_angle: -15 },
-            deep_squat: { hip_flexion: 85, hip_adduction: 8, hip_rotation: 5, knee_angle: 90, ankle_angle: 25 },
-            hamstring_stretch: { hip_flexion: 75, hip_adduction: 0, hip_rotation: 0, knee_angle: 5, ankle_angle: 0 }
-        };
-
-        const t = targets[name] || targets.neutral;
-        // Smoothly set coordinates
-        for (const [k, v] of Object.entries(t)) {
-            this.system.coordinates[k] = v;
-            const slider = document.getElementById(`slider-${k}`);
-            if (slider) slider.value = v;
+        if (this.currentModelType === "lower_limb") {
+            const targets = {
+                neutral: { hip_flexion: 0, hip_adduction: 0, hip_rotation: 0, knee_angle: 0, ankle_angle: 0 },
+                mid_stance: { hip_flexion: 5, hip_adduction: 2, hip_rotation: 0, knee_angle: 12, ankle_angle: 8 },
+                toe_off: { hip_flexion: -10, hip_adduction: -2, hip_rotation: 0, knee_angle: 35, ankle_angle: -15 },
+                deep_squat: { hip_flexion: 85, hip_adduction: 8, hip_rotation: 5, knee_angle: 90, ankle_angle: 25 },
+                hamstring_stretch: { hip_flexion: 75, hip_adduction: 0, hip_rotation: 0, knee_angle: 5, ankle_angle: 0 }
+            };
+            const t = targets[name] || targets.neutral;
+            for (const [k, v] of Object.entries(t)) {
+                this.system.coordinates[k] = v;
+                const slider = document.getElementById(`slider-${k}`);
+                if (slider) slider.value = v;
+            }
+        } else {
+            const targets = {
+                neutral: { shoulder_flexion: 0, elbow_flexion: 20, pro_sup: 0 },
+                mid_stance: { shoulder_flexion: 15, elbow_flexion: 50, pro_sup: 10 },
+                toe_off: { shoulder_flexion: 30, elbow_flexion: 90, pro_sup: 30 },
+                deep_squat: { shoulder_flexion: 20, elbow_flexion: 120, pro_sup: 45 }
+            };
+            const t = targets[name] || targets.neutral;
+            for (const [k, v] of Object.entries(t)) {
+                this.system.coordinates[k] = v;
+                const slider = document.getElementById(`slider-${k}`);
+                if (slider) slider.value = v;
+            }
         }
         this.updateSimulation();
     }
@@ -601,19 +856,15 @@ class MoSimApp {
         switch (view) {
             case "sagittal":
                 this.camera.position.set(2.0, -0.3, 0.0);
-                this.controls.target.set(0.0, -0.4, 0.0);
                 break;
             case "anterior":
                 this.camera.position.set(0.0, -0.3, 2.0);
-                this.controls.target.set(0.0, -0.4, 0.0);
                 break;
             case "oblique":
                 this.camera.position.set(1.4, 0.1, 1.6);
-                this.controls.target.set(0.0, -0.4, 0.0);
                 break;
             case "superior":
                 this.camera.position.set(0.0, 1.8, 0.1);
-                this.controls.target.set(0.0, -0.4, 0.0);
                 break;
         }
         this.controls.update();
@@ -623,75 +874,163 @@ class MoSimApp {
      * Static Optimization Solver: Min sum(Fm / F0)^2 subject to target joint moment
      */
     solveStaticOptimization() {
-        const targetTorque = parseFloat(document.getElementById("input-target-torque").value) || 30.0; // N.m knee extension
-        const momentArms = this.system.computeMomentArms("knee_angle");
+        const targetTorque = parseFloat(document.getElementById("input-target-torque").value) || 35.0;
 
-        // Identify agonist muscles (quadriceps with positive knee extension moment arms)
-        // Rectus femoris, Vastus lateralis, Vastus medialis
-        let sumDenom = 0;
-        const candidateMuscles = ["rect_fem", "vas_lat", "vas_med"];
+        if (this.currentModelType === "lower_limb") {
+            const momentArms = this.system.computeMomentArms("knee_angle");
+            const candidateMuscles = ["rect_fem", "vas_lat", "vas_med"];
 
-        for (const name of candidateMuscles) {
-            const m = this.system.muscleMap.get(name);
-            const r = momentArms[name] || 0.04;
-            sumDenom += (r * r) * (m.maxIsometricForce * m.maxIsometricForce);
-        }
+            let sumDenom = 0;
+            for (const name of candidateMuscles) {
+                const m = this.system.muscleMap.get(name);
+                const r = momentArms[name] || 0.04;
+                sumDenom += (r * r) * (m.maxIsometricForce * m.maxIsometricForce);
+            }
+            const lambda = targetTorque / Math.max(1e-5, sumDenom);
 
-        const lambda = targetTorque / Math.max(1e-5, sumDenom);
+            for (const name of candidateMuscles) {
+                const m = this.system.muscleMap.get(name);
+                const r = momentArms[name] || 0.04;
+                const optimalF = lambda * r * (m.maxIsometricForce * m.maxIsometricForce);
+                const optimalAct = Math.max(0.05, Math.min(1.0, optimalF / m.maxIsometricForce));
+                m.activation = optimalAct;
 
-        // Compute optimal activations
-        for (const name of candidateMuscles) {
-            const m = this.system.muscleMap.get(name);
-            const r = momentArms[name] || 0.04;
-            const optimalF = lambda * r * (m.maxIsometricForce * m.maxIsometricForce);
-            const optimalAct = Math.max(0.05, Math.min(1.0, optimalF / m.maxIsometricForce));
-            m.activation = optimalAct;
+                const stimSlider = document.getElementById(`stim-${name}`);
+                if (stimSlider) stimSlider.value = (optimalAct * 100).toFixed(0);
+                const stimVal = document.getElementById(`stim-val-${name}`);
+                if (stimVal) stimVal.innerText = `${(optimalAct * 100).toFixed(0)}%`;
+            }
+        } else {
+            const momentArms = this.system.computeMomentArms("elbow_flexion");
+            const candidateMuscles = ["biceps_lh", "biceps_sh", "brachialis"];
 
-            const stimSlider = document.getElementById(`stim-${name}`);
-            if (stimSlider) stimSlider.value = (optimalAct * 100).toFixed(0);
-            const stimVal = document.getElementById(`stim-val-${name}`);
-            if (stimVal) stimVal.innerText = `${(optimalAct * 100).toFixed(0)}%`;
+            let sumDenom = 0;
+            for (const name of candidateMuscles) {
+                const m = this.system.muscleMap.get(name);
+                const r = momentArms[name] || 0.03;
+                sumDenom += (r * r) * (m.maxIsometricForce * m.maxIsometricForce);
+            }
+            const lambda = targetTorque / Math.max(1e-5, sumDenom);
+
+            for (const name of candidateMuscles) {
+                const m = this.system.muscleMap.get(name);
+                const r = momentArms[name] || 0.03;
+                const optimalF = lambda * r * (m.maxIsometricForce * m.maxIsometricForce);
+                const optimalAct = Math.max(0.05, Math.min(1.0, optimalF / m.maxIsometricForce));
+                m.activation = optimalAct;
+
+                const stimSlider = document.getElementById(`stim-${name}`);
+                if (stimSlider) stimSlider.value = (optimalAct * 100).toFixed(0);
+                const stimVal = document.getElementById(`stim-val-${name}`);
+                if (stimVal) stimVal.innerText = `${(optimalAct * 100).toFixed(0)}%`;
+            }
         }
 
         this.updateSimulation();
-        alert(`Static Optimization Solved!\nTarget Knee Torque: ${targetTorque} N·m\nOptimized Quadriceps Recruitment:\n- Rectus Femoris: ${(this.system.muscleMap.get("rect_fem").activation * 100).toFixed(1)}%\n- Vastus Lateralis: ${(this.system.muscleMap.get("vas_lat").activation * 100).toFixed(1)}%\n- Vastus Medialis: ${(this.system.muscleMap.get("vas_med").activation * 100).toFixed(1)}%`);
+        alert(`Static Optimization Solved for Target Torque: ${targetTorque} N·m!\nOptimal muscle recruitment has been calculated and applied to the simulation.`);
     }
 
     /**
-     * Animation Loop (60 FPS) with Gait Cycle Interpolation
+     * Export current model to standard OpenSim 4.x .osim XML format
+     */
+    exportOpenSimModel() {
+        const modelName = this.currentModelType === "lower_limb" ? "MoSim_Lower_Limb_Rajagopal2016" : "MoSim_Upper_Limb_Holzbaur2005";
+        const xml = OpenSimIO.exportToOsimXml(this.system, modelName);
+
+        const blob = new Blob([xml], { type: "application/xml" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${modelName}.osim`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    /**
+     * Export motion trajectory to standard OpenSim .mot format
+     */
+    exportMotionTrajectory() {
+        const coordNames = Object.keys(this.system.coordLimits);
+        const rows = this.recordedTrajectory.length > 5 ? this.recordedTrajectory : (this.currentModelType === "lower_limb" ? this.gaitDataLower : this.gaitDataUpper);
+        const timeArray = rows.map((r, i) => i * 0.02);
+
+        const motText = OpenSimIO.exportMotionFile(timeArray, coordNames, rows);
+        const blob = new Blob([motText], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `MoSim_Simulation_${this.currentModelType}.mot`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    /**
+     * Capture high-resolution PNG snapshot from the 3D WebGL canvas
+     */
+    captureSnapshot() {
+        this.renderer.render(this.scene, this.camera);
+        const dataUrl = this.renderer.domElement.toDataURL("image/png");
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = `MoSim_3D_Snapshot_${Date.now()}.png`;
+        a.click();
+    }
+
+    /**
+     * Animation Loop (60 FPS) with Gait Cycle Interpolation & RK4 Physics
      */
     animate() {
         requestAnimationFrame(() => this.animate());
 
-        if (this.isPlaying) {
-            this.gaitProgress = (this.gaitProgress + 0.006 * this.gaitSpeed) % 1.0;
+        // 1. Forward Dynamics Physics Integration Mode
+        if (this.isPhysicsMode) {
+            const activeCoordKey = this.currentModelType === "lower_limb" ? "knee_angle" : "elbow_flexion";
+            const momentArms = this.system.computeMomentArms(activeCoordKey);
 
-            // Interpolate gait data points
-            const cycleCount = this.gaitData.length;
+            let netTorque = 0.0;
+            for (const muscle of this.system.muscles) {
+                const r = momentArms[muscle.name] || 0.0;
+                netTorque += r * muscle.totalForce;
+            }
+
+            // Step Runge-Kutta 4th order (dt = 0.016s)
+            const newAngleDeg = this.physicsEngine.stepRK4(netTorque, 0.016);
+            this.system.coordinates[activeCoordKey] = newAngleDeg;
+
+            const slider = document.getElementById(`slider-${activeCoordKey}`);
+            if (slider) slider.value = newAngleDeg;
+
+            this.updateSimulation();
+        }
+        // 2. Kinematic Gait / Flexion Replay Mode
+        else if (this.isPlaying) {
+            this.gaitProgress = (this.gaitProgress + 0.006 * this.gaitSpeed) % 1.0;
+            const data = this.currentModelType === "lower_limb" ? this.gaitDataLower : this.gaitDataUpper;
+
+            const cycleCount = data.length;
             const sampleIdx = this.gaitProgress * (cycleCount - 1);
             const i0 = Math.floor(sampleIdx);
             const i1 = Math.min(cycleCount - 1, i0 + 1);
             const alpha = sampleIdx - i0;
 
-            const p0 = this.gaitData[i0];
-            const p1 = this.gaitData[i1];
+            const p0 = data[i0];
+            const p1 = data[i1];
 
-            this.system.coordinates.hip_flexion = p0.hip + alpha * (p1.hip - p0.hip);
-            this.system.coordinates.knee_angle = p0.knee + alpha * (p1.knee - p0.knee);
-            this.system.coordinates.ankle_angle = p0.ankle + alpha * (p1.ankle - p0.ankle);
-
-            // Update sliders
-            const hipSlider = document.getElementById("slider-hip_flexion");
-            if (hipSlider) hipSlider.value = this.system.coordinates.hip_flexion;
-            const kneeSlider = document.getElementById("slider-knee_angle");
-            if (kneeSlider) kneeSlider.value = this.system.coordinates.knee_angle;
-            const ankleSlider = document.getElementById("slider-ankle_angle");
-            if (ankleSlider) ankleSlider.value = this.system.coordinates.ankle_angle;
+            for (const key of Object.keys(this.system.coordLimits)) {
+                if (p0[key] !== undefined && p1[key] !== undefined) {
+                    const interpolated = p0[key] + alpha * (p1[key] - p0[key]);
+                    this.system.coordinates[key] = interpolated;
+                    const slider = document.getElementById(`slider-${key}`);
+                    if (slider) slider.value = interpolated;
+                }
+            }
 
             const gaitBadge = document.getElementById("gait-phase-badge");
             if (gaitBadge) {
                 const pct = (this.gaitProgress * 100).toFixed(0);
-                const phase = this.gaitProgress < 0.6 ? "Stance Phase" : "Swing Phase";
+                const phase = this.currentModelType === "lower_limb" ?
+                    (this.gaitProgress < 0.6 ? "Stance" : "Swing") :
+                    (this.gaitProgress < 0.5 ? "Flexing" : "Extending");
                 gaitBadge.innerText = `${pct}% (${phase})`;
             }
 
@@ -703,7 +1042,7 @@ class MoSimApp {
     }
 }
 
-// Instantiate upon DOM load
+// Global start
 window.addEventListener("DOMContentLoaded", () => {
     window.app = new MoSimApp();
 });
