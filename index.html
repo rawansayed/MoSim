@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoSim - Next-Generation Virtual Musculoskeletal Simulator</title>
+    <meta name="description" content="MoSim: Web-native virtual musculoskeletal simulator engineered with 3-element Hill-type muscle equations, multibody rigid dynamics, and real-time 3D biomechanical visualization.">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Three.js and OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <header class="topbar">
+        <div class="brand-section">
+            <div class="brand-logo">
+                <div class="brand-logo-icon">M</div>
+                <span>MoSim</span>
+            </div>
+            <span class="badge-version">v1.0.0-PRO</span>
+            <span style="font-size: 11px; color: var(--text-muted); margin-left: 8px;">Musculoskeletal Biomechanics Engine</span>
+        </div>
+
+        <div class="topbar-controls">
+            <!-- Gait Simulation Controls -->
+            <button class="topbar-btn" id="btn-play-gait">
+                <span>▶ Play Gait</span>
+            </button>
+            <span class="badge-version" id="gait-phase-badge" style="background: rgba(34,197,94,0.15); color: var(--accent-green); border-color: rgba(34,197,94,0.3);">
+                0% (Stance)
+            </span>
+
+            <button class="topbar-btn" id="btn-reset-pose">
+                <span>↺ Reset Pose</span>
+            </button>
+
+            <!-- Camera View Presets -->
+            <button class="topbar-btn btn-cam" data-view="oblique">Perspective</button>
+            <button class="topbar-btn btn-cam" data-view="sagittal">Sagittal (Right)</button>
+            <button class="topbar-btn btn-cam" data-view="anterior">Anterior (Front)</button>
+
+            <!-- GitHub Project Link -->
+            <a href="https://github.com/rawansayed/MoSim" target="_blank" class="topbar-btn" style="border-color: rgba(56,189,248,0.4);">
+                <span>GitHub Repo ↗</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <main class="main-workspace">
+        <!-- Left Panel: Model Hierarchy Explorer -->
+        <aside class="glass-panel left-explorer">
+            <div class="panel-header">
+                <span class="panel-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    Model Explorer
+                </span>
+                <span style="font-size: 10px; color: var(--text-muted);">10 MTUs</span>
+            </div>
+            <div class="panel-content">
+                <!-- Skeletal Bodies -->
+                <div class="tree-section-header">Skeletal Bodies (Rigid)</div>
+                <ul class="tree-list">
+                    <li class="tree-item"><div class="tree-item-left"><span class="tree-dot" style="background:#cbd5e1;"></span><span class="tree-title">Pelvis Frame</span></div><span style="font-size:10px; color:var(--text-muted);">Ground</span></li>
+                    <li class="tree-item"><div class="tree-item-left"><span class="tree-dot" style="background:#cbd5e1;"></span><span class="tree-title">Femur (Right)</span></div><span style="font-size:10px; color:var(--text-muted);">0.44m</span></li>
+                    <li class="tree-item"><div class="tree-item-left"><span class="tree-dot" style="background:#cbd5e1;"></span><span class="tree-title">Patella (Lever)</span></div><span style="font-size:10px; color:var(--text-muted);">45mm arm</span></li>
+                    <li class="tree-item"><div class="tree-item-left"><span class="tree-dot" style="background:#cbd5e1;"></span><span class="tree-title">Tibia & Fibula</span></div><span style="font-size:10px; color:var(--text-muted);">0.41m</span></li>
+                    <li class="tree-item"><div class="tree-item-left"><span class="tree-dot" style="background:#cbd5e1;"></span><span class="tree-title">Foot & Calcaneus</span></div><span style="font-size:10px; color:var(--text-muted);">0.24m</span></li>
+                </ul>
+
+                <!-- Musculotendon Units -->
+                <div class="tree-section-header" style="margin-top: 14px;">Muscles & Tendons (Hill-Type)</div>
+                <ul class="tree-list" id="muscle-tree-list">
+                    <!-- Populated dynamically by app.js -->
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Center: 3D Viewport -->
+        <section class="center-viewport">
+            <div id="canvas-container"></div>
+
+            <!-- Viewport Camera Quick Actions -->
+            <div class="viewport-overlay">
+                <button class="topbar-btn btn-cam" data-view="oblique" style="padding: 4px 8px; font-size: 10px;">Iso</button>
+                <button class="topbar-btn btn-cam" data-view="sagittal" style="padding: 4px 8px; font-size: 10px;">Lateral</button>
+                <button class="topbar-btn btn-cam" data-view="superior" style="padding: 4px 8px; font-size: 10px;">Top</button>
+            </div>
+
+            <!-- Real-Time Selected Muscle Telemetry HUD -->
+            <div class="viewport-hud">
+                <div style="font-size: 11px; font-weight: 700; color: var(--accent-gold); margin-bottom: 6px;" id="hud-muscle-name">
+                    Rectus Femoris
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">Total Tension:</span>
+                    <span class="hud-value" id="hud-force">0 N</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">Active Force (a·fL):</span>
+                    <span class="hud-value" id="hud-active">0 N</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">Passive Elastic (fPE):</span>
+                    <span class="hud-value" id="hud-passive" style="color: var(--accent-rose);">0 N</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">Fiber Length (lm):</span>
+                    <span class="hud-value" id="hud-length">0 mm</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">Tendon Length (lt):</span>
+                    <span class="hud-value" id="hud-tendon">0 mm</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">Pennation (α):</span>
+                    <span class="hud-value" id="hud-pennation">5.0°</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">Neural Activation:</span>
+                    <span class="hud-value" id="hud-activation" style="color: var(--accent-green);">5%</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Panel: Coordinates, Excitation, Solvers -->
+        <aside class="glass-panel right-dock">
+            <!-- Tabs -->
+            <div class="tab-nav">
+                <button class="tab-btn active" id="tab-btn-coords" onclick="showTab('coords')">Coordinates</button>
+                <button class="tab-btn" id="tab-btn-stim" onclick="showTab('stim')">Excitation</button>
+                <button class="tab-btn" id="tab-btn-solver" onclick="showTab('solver')">Optimization</button>
+            </div>
+
+            <div class="panel-content">
+                <!-- Tab 1: Joint Coordinates -->
+                <div id="tab-content-coords">
+                    <!-- Presets -->
+                    <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">
+                        Clinical Posture Presets
+                    </div>
+                    <div class="preset-grid">
+                        <button class="btn-preset" data-preset="neutral">Neutral Stance</button>
+                        <button class="btn-preset" data-preset="mid_stance">Mid-Stance (Gait)</button>
+                        <button class="btn-preset" data-preset="toe_off">Toe-Off Propulsion</button>
+                        <button class="btn-preset" data-preset="deep_squat">Deep Squat (90°)</button>
+                    </div>
+
+                    <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">
+                        Joint Angles (DOFs)
+                    </div>
+
+                    <!-- Knee Angle Slider -->
+                    <div class="slider-item">
+                        <div class="slider-header">
+                            <span class="slider-name">Knee Angle (Flexion)</span>
+                            <span class="slider-val" id="val-knee_angle">0.0°</span>
+                        </div>
+                        <input type="range" class="coord-slider" id="slider-knee_angle" min="0" max="140" value="0" step="0.5">
+                    </div>
+
+                    <!-- Hip Flexion Slider -->
+                    <div class="slider-item">
+                        <div class="slider-header">
+                            <span class="slider-name">Hip Flexion / Extension</span>
+                            <span class="slider-val" id="val-hip_flexion">0.0°</span>
+                        </div>
+                        <input type="range" class="coord-slider" id="slider-hip_flexion" min="-30" max="120" value="0" step="0.5">
+                    </div>
+
+                    <!-- Ankle Angle Slider -->
+                    <div class="slider-item">
+                        <div class="slider-header">
+                            <span class="slider-name">Ankle Angle (Plantar/Dorsi)</span>
+                            <span class="slider-val" id="val-ankle_angle">0.0°</span>
+                        </div>
+                        <input type="range" class="coord-slider" id="slider-ankle_angle" min="-30" max="50" value="0" step="0.5">
+                    </div>
+
+                    <!-- Hip Adduction Slider -->
+                    <div class="slider-item">
+                        <div class="slider-header">
+                            <span class="slider-name">Hip Adduction / Abduction</span>
+                            <span class="slider-val" id="val-hip_adduction">0.0°</span>
+                        </div>
+                        <input type="range" class="coord-slider" id="slider-hip_adduction" min="-30" max="45" value="0" step="0.5">
+                    </div>
+
+                    <!-- Hip Rotation Slider -->
+                    <div class="slider-item">
+                        <div class="slider-header">
+                            <span class="slider-name">Hip Internal / External Rot</span>
+                            <span class="slider-val" id="val-hip_rotation">0.0°</span>
+                        </div>
+                        <input type="range" class="coord-slider" id="slider-hip_rotation" min="-40" max="40" value="0" step="0.5">
+                    </div>
+                </div>
+
+                <!-- Tab 2: Neural Muscle Excitation Controls -->
+                <div id="tab-content-stim" style="display: none;">
+                    <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">
+                        Individual Muscle Excitation (u ∈ [0, 1])
+                    </div>
+                    <div id="stim-sliders-container">
+                        <!-- Populated dynamically by app.js -->
+                    </div>
+                </div>
+
+                <!-- Tab 3: Static Optimization Solver -->
+                <div id="tab-content-solver" style="display: none;">
+                    <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">
+                        Force-Sharing Optimization
+                    </div>
+                    <p style="font-size: 11px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px;">
+                        Resolves the muscle indeterminacy problem by quadratic programming:
+                        <br>
+                        <code>min ∑ (F_m / F0_max)²</code> subject to target joint torque.
+                    </p>
+                    <div style="margin-bottom: 12px;">
+                        <label style="font-size: 11px; color: var(--text-muted);">Target Knee Extension Torque (N·m):</label>
+                        <input type="number" id="input-target-torque" value="45.0" style="width: 100%; padding: 6px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); color: #fff; font-family: var(--font-mono); margin-top: 4px;">
+                    </div>
+                    <button class="topbar-btn" id="btn-solve-so" style="width: 100%; justify-content: center; background: rgba(56,189,248,0.2); border-color: var(--accent-cyan); color: #fff;">
+                        ⚡ Solve Muscle Recruitment
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Bottom Panel: Dynamic Biomechanical Plotter & HUD -->
+        <section class="glass-panel bottom-telemetry">
+            <div class="panel-header">
+                <span class="panel-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    Real-Time Biomechanical HUD & Curve Inspector
+                </span>
+                <div class="joint-filter-bar">
+                    <span style="font-size: 10px; color: var(--text-muted); align-self: center; margin-right: 4px;">Moment Arm Joint:</span>
+                    <button class="btn-joint-select active" data-joint="knee">Knee</button>
+                    <button class="btn-joint-select" data-joint="hip">Hip</button>
+                    <button class="btn-joint-select" data-joint="ankle">Ankle</button>
+                </div>
+            </div>
+            <div style="flex: 1; position: relative;">
+                <canvas id="curve-plot-canvas"></canvas>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function showTab(tabName) {
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            document.getElementById("tab-btn-" + tabName).classList.add("active");
+            document.getElementById("tab-content-coords").style.display = tabName === "coords" ? "block" : "none";
+            document.getElementById("tab-content-stim").style.display = tabName === "stim" ? "block" : "none";
+            document.getElementById("tab-content-solver").style.display = tabName === "solver" ? "block" : "none";
+        }
+    </script>
+    <script src="biomechanics.js"></script>
+    <script src="plotter.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
