@@ -58,6 +58,19 @@ class MoSimApp {
         this.gridHelper = null;
         this.comMesh = null;
 
+        // Zero-allocation cache & timing
+        this._vA = null;
+        this._vB = null;
+        this._vDir = null;
+        this._vMid = null;
+        this._up = null;
+        this._qRot = null;
+        this.sharedMuscleCylinderGeo = null;
+        this.sharedMuscleSphereGeo = null;
+        this.frameCount = 0;
+        this.domCache = null;
+        this.lastFrameTime = 0;
+
         // Recorded Motion Trajectory
         this.recordedTrajectory = [];
 
@@ -175,6 +188,14 @@ class MoSimApp {
             if (this.plotter) this.plotter.resize();
             if (this.openSimPlotter) this.openSimPlotter.resize();
         });
+
+        // Pre-allocated vectors for zero-allocation 60+ FPS pipeline
+        this._vA = new THREE.Vector3();
+        this._vB = new THREE.Vector3();
+        this._vDir = new THREE.Vector3();
+        this._vMid = new THREE.Vector3();
+        this._up = new THREE.Vector3(0, 1, 0);
+        this._qRot = new THREE.Quaternion();
     }
 
     /**
@@ -227,8 +248,10 @@ class MoSimApp {
         for (const [key, mesh] of Object.entries(this.boneMeshes)) {
             this.scene.remove(mesh);
         }
-        for (const [key, mesh] of Object.entries(this.muscleMeshes)) {
-            this.scene.remove(mesh);
+        for (const [key, obj] of Object.entries(this.muscleMeshes)) {
+            if (obj && obj.group) this.scene.remove(obj.group);
+            else if (obj && obj.isMesh) this.scene.remove(obj);
+            else if (obj) this.scene.remove(obj);
         }
         for (const [key, marker] of Object.entries(this.jointMarkers)) {
             this.scene.remove(marker);
@@ -573,26 +596,59 @@ class MoSimApp {
     }
 
     createMuscleTubes() {
+        if (!this.sharedMuscleCylinderGeo) {
+            this.sharedMuscleCylinderGeo = new THREE.CylinderGeometry(1, 1, 1, 10, 1, false);
+            this.sharedMuscleSphereGeo = new THREE.SphereGeometry(1, 8, 8);
+        }
+
+        const MAX_SEGMENTS = 5;
         for (const muscle of this.system.muscles) {
+            const group = new THREE.Group();
+            group.name = `muscle_group_${muscle.name}`;
+
             const material = new THREE.MeshStandardMaterial({
                 color: 0xcc2222,
                 roughness: 0.35,
                 metalness: 0.15,
-                emissive: 0x660000,
+                emissive: 0x440000,
                 emissiveIntensity: 0.2
             });
 
-            const mesh = new THREE.Mesh(new THREE.BufferGeometry(), material);
-            mesh.castShadow = true;
-            this.scene.add(mesh);
-            this.muscleMeshes[muscle.name] = mesh;
+            const segments = [];
+            const joints = [];
+
+            for (let i = 0; i < MAX_SEGMENTS; i++) {
+                const segMesh = new THREE.Mesh(this.sharedMuscleCylinderGeo, material);
+                segMesh.visible = false;
+                segMesh.castShadow = true;
+                group.add(segMesh);
+                segments.push(segMesh);
+
+                const jointMesh = new THREE.Mesh(this.sharedMuscleSphereGeo, material);
+                jointMesh.visible = false;
+                group.add(jointMesh);
+                joints.push(jointMesh);
+            }
+
+            const endJoint = new THREE.Mesh(this.sharedMuscleSphereGeo, material);
+            endJoint.visible = false;
+            group.add(endJoint);
+            joints.push(endJoint);
+
+            this.scene.add(group);
+            this.muscleMeshes[muscle.name] = {
+                group: group,
+                material: material,
+                segments: segments,
+                joints: joints
+            };
         }
     }
 
     /**
      * Update 3D Geometry and Kinematics across Active Models
      */
-    updateSimulation() {
+    updateSimulation(options = {}) {
         const updateData = this.system.update();
         const kin = updateData.kinematics;
 
@@ -634,100 +690,152 @@ class MoSimApp {
                                kin.anglesRad.qShoulderFlexL, kin.anglesRad.qElbowFlexL, 0, "_l");
         }
 
-        // Update Muscle Geometry and Color Map
+        // High-performance zero-allocation muscle updates (60-120+ FPS)
         for (const muscle of this.system.muscles) {
-            const mesh = this.muscleMeshes[muscle.name];
+            const mObj = this.muscleMeshes[muscle.name];
             const mData = updateData.muscles[muscle.name];
-            if (mesh && mData && mData.path && mData.path.length >= 2) {
-                const points = mData.path.map(p => new THREE.Vector3(p.x, p.y, p.z));
-                const curve = new THREE.CatmullRomCurve3(points);
+            if (mObj && mData && mData.path && mData.path.length >= 2) {
+                const path = mData.path;
+                const numPoints = path.length;
+                const numSegments = numPoints - 1;
 
                 const baseRadius = 0.012 * Math.sqrt(muscle.maxIsometricForce / 1500.0);
                 const bulking = 1.0 + 0.35 * muscle.activation;
                 const tubeRadius = Math.max(0.005, Math.min(0.045, baseRadius * bulking));
 
-                mesh.geometry.dispose();
-                mesh.geometry = new THREE.TubeGeometry(curve, 28, tubeRadius, 10, false);
+                // Update segment cylinders
+                for (let i = 0; i < mObj.segments.length; i++) {
+                    const seg = mObj.segments[i];
+                    if (i < numSegments) {
+                        const p0 = path[i];
+                        const p1 = path[i + 1];
+                        this._vA.set(p0.x, p0.y, p0.z);
+                        this._vB.set(p1.x, p1.y, p1.z);
+                        this._vDir.subVectors(this._vB, this._vA);
+                        const segLen = this._vDir.length();
+                        if (segLen > 1e-4) {
+                            this._vMid.addVectors(this._vA, this._vB).multiplyScalar(0.5);
+                            this._vDir.divideScalar(segLen);
+                            seg.position.copy(this._vMid);
+                            this._qRot.setFromUnitVectors(this._up, this._vDir);
+                            seg.quaternion.copy(this._qRot);
+                            seg.scale.set(tubeRadius, segLen, tubeRadius);
+                            seg.visible = true;
+                        } else {
+                            seg.visible = false;
+                        }
+                    } else {
+                        seg.visible = false;
+                    }
+                }
 
-                // OpenSim Muscle Coloring Engine
+                // Update spherical joint waypoints
+                for (let i = 0; i < mObj.joints.length; i++) {
+                    const joint = mObj.joints[i];
+                    if (i < numPoints) {
+                        const p = path[i];
+                        joint.position.set(p.x, p.y, p.z);
+                        joint.scale.setScalar(tubeRadius * 1.05);
+                        joint.visible = true;
+                    } else {
+                        joint.visible = false;
+                    }
+                }
+
+                // Color Map
+                const mat = mObj.material;
                 if (this.muscleColorMode === "activation") {
                     const act = Math.max(0, Math.min(1, muscle.activation));
-                    // Blue -> Green -> Yellow -> Red gradient
-                    const c = new THREE.Color();
                     if (act < 0.33) {
-                        c.setRGB(0.1, 0.4 + act * 1.5, 0.95);
+                        const r = 0.1, g = 0.4 + act * 1.5, b = 0.95;
+                        mat.color.setRGB(r, g, b);
+                        mat.emissive.setRGB(r * 0.25, g * 0.25, b * 0.25);
                     } else if (act < 0.66) {
-                        c.setRGB(0.2 + (act - 0.33) * 2.2, 0.9, 0.2);
+                        const r = 0.2 + (act - 0.33) * 2.2, g = 0.9, b = 0.2;
+                        mat.color.setRGB(r, g, b);
+                        mat.emissive.setRGB(r * 0.25, g * 0.25, b * 0.25);
                     } else {
-                        c.setRGB(0.95, 0.8 - (act - 0.66) * 2.0, 0.1);
+                        const r = 0.95, g = 0.8 - (act - 0.66) * 2.0, b = 0.1;
+                        mat.color.setRGB(r, g, b);
+                        mat.emissive.setRGB(r * 0.25, g * 0.25, b * 0.25);
                     }
-                    mesh.material.color = c;
-                    mesh.material.emissive = c.clone().multiplyScalar(0.25);
                 } else if (this.muscleColorMode === "length") {
                     const normL = muscle.fiberLength / muscle.optimalFiberLength;
-                    const c = new THREE.Color().setHSL(0.6 - Math.min(0.6, (normL - 0.6) * 0.8), 0.9, 0.5);
-                    mesh.material.color = c;
+                    mat.color.setHSL(0.6 - Math.min(0.6, (normL - 0.6) * 0.8), 0.9, 0.5);
+                    mat.emissive.setRGB(0, 0, 0);
                 } else if (this.muscleColorMode === "force") {
                     const normF = Math.min(1.0, muscle.totalForce / muscle.maxIsometricForce);
-                    const c = new THREE.Color().setHSL(0.33 - normF * 0.33, 0.9, 0.5);
-                    mesh.material.color = c;
+                    mat.color.setHSL(0.33 - normF * 0.33, 0.9, 0.5);
+                    mat.emissive.setRGB(0, 0, 0);
                 } else {
-                    mesh.material.color.setHex(0xcc2222);
-                    mesh.material.emissive.setHex(0x550000);
+                    mat.color.setHex(0xcc2222);
+                    mat.emissive.setHex(0x440000);
                 }
             }
         }
 
-        // Update Center of Mass
+        // Center of Mass
         if (this.comMesh) {
             this.comMesh.position.set(0.0, -0.05 + 0.05 * Math.sin(kin.anglesRad.qHipFlexR), 0.0);
             this.comMesh.visible = this.showCoM;
         }
 
-        // Update Experimental Mocap Markers
-        const curFrame = this.currentMotion.frames[this.currentMotionFrame];
-        if (curFrame && curFrame.markers) {
-            for (const [mName, pos] of Object.entries(curFrame.markers)) {
-                if (this.markerMeshes[mName]) {
-                    this.markerMeshes[mName].position.set(pos[0], pos[1], pos[2]);
-                    this.markerMeshes[mName].visible = this.showMarkers;
+        // Update markers if static
+        if (!this.isPlaying) {
+            const curFrame = this.currentMotion.frames[this.currentMotionFrame];
+            if (curFrame && curFrame.markers) {
+                for (const [mName, pos] of Object.entries(curFrame.markers)) {
+                    if (this.markerMeshes[mName]) {
+                        this.markerMeshes[mName].position.set(pos[0], pos[1], pos[2]);
+                        this.markerMeshes[mName].visible = this.showMarkers;
+                    }
                 }
             }
         }
 
-        // Update Coordinates Table Inputs & Badges
-        for (const [key, val] of Object.entries(this.system.coordinates)) {
-            const inputEl = document.getElementById(`input-coord-${key}`);
-            if (inputEl && document.activeElement !== inputEl) inputEl.value = val.toFixed(3);
-            const sliderEl = document.getElementById(`slider-${key}`);
-            if (sliderEl && document.activeElement !== sliderEl) sliderEl.value = val;
-            const badge = document.getElementById(`val-${key}`);
-            if (badge) badge.innerText = `${val.toFixed(1)}°`;
-        }
+        // Throttled UI & Telemetry updates to prevent DOM layout thrashing
+        this.frameCount = (this.frameCount || 0) + 1;
+        const shouldUpdateDOM = (options && options.forceDOM) || (this.frameCount % 3 === 0);
 
-        // Update Selected Muscle Telemetry HUD
-        if (this.selectedMuscle) {
-            const mData = updateData.muscles[this.selectedMuscle.name];
-            if (mData) {
-                const s = mData.state;
-                document.getElementById("hud-muscle-name").innerText = this.selectedMuscle.displayName;
-                document.getElementById("hud-force").innerText = `${s.totalForce.toFixed(0)} N`;
-                document.getElementById("hud-active").innerText = `${s.activeForce.toFixed(0)} N`;
-                document.getElementById("hud-passive").innerText = `${s.passiveForce.toFixed(0)} N`;
-                document.getElementById("hud-length").innerText = `${(s.fiberLength * 1000).toFixed(1)} mm`;
-                document.getElementById("hud-tendon").innerText = `${(s.tendonLength * 1000).toFixed(1)} mm`;
-                document.getElementById("hud-pennation").innerText = `${s.pennationAngleDeg.toFixed(1)}°`;
-                document.getElementById("hud-activation").innerText = `${(this.selectedMuscle.activation * 100).toFixed(0)}%`;
+        if (shouldUpdateDOM) {
+            if (!this.domCache) this.cacheDOMElements();
+
+            if (this.domCache && this.domCache.coords) {
+                for (const [key, val] of Object.entries(this.system.coordinates)) {
+                    const item = this.domCache.coords[key];
+                    if (item) {
+                        if (item.input && document.activeElement !== item.input) item.input.value = val.toFixed(3);
+                        if (item.slider && document.activeElement !== item.slider) item.slider.value = val;
+                        if (item.badge) item.badge.innerText = `${val.toFixed(1)}°`;
+                    }
+                }
             }
-        }
 
-        // Update Navigator Tree Badges
-        for (const muscle of this.system.muscles) {
-            const badge = document.getElementById(`tree-force-${muscle.name}`);
-            if (badge) badge.innerText = `${muscle.totalForce.toFixed(0)} N`;
-        }
+            if (this.selectedMuscle && this.domCache && this.domCache.hud) {
+                const mData = updateData.muscles[this.selectedMuscle.name];
+                if (mData) {
+                    const s = mData.state;
+                    const h = this.domCache.hud;
+                    if (h.name) h.name.innerText = this.selectedMuscle.displayName;
+                    if (h.force) h.force.innerText = `${s.totalForce.toFixed(0)} N`;
+                    if (h.active) h.active.innerText = `${s.activeForce.toFixed(0)} N`;
+                    if (h.passive) h.passive.innerText = `${s.passiveForce.toFixed(0)} N`;
+                    if (h.length) h.length.innerText = `${(s.fiberLength * 1000).toFixed(1)} mm`;
+                    if (h.tendon) h.tendon.innerText = `${(s.tendonLength * 1000).toFixed(1)} mm`;
+                    if (h.pennation) h.pennation.innerText = `${s.pennationAngleDeg.toFixed(1)}°`;
+                    if (h.activation) h.activation.innerText = `${(this.selectedMuscle.activation * 100).toFixed(0)}%`;
+                }
+            }
 
-        if (this.plotter) this.plotter.render();
+            if (this.domCache && this.domCache.treeForces) {
+                for (const muscle of this.system.muscles) {
+                    const badge = this.domCache.treeForces[muscle.name];
+                    if (badge) badge.innerText = `${muscle.totalForce.toFixed(0)} N`;
+                }
+            }
+
+            if (this.plotter) this.plotter.render();
+        }
     }
 
     updateLegMesh(hip, knee, ankle, patella, qHipFlex, qHipAdd, qKnee, qAnkle, suffix) {
@@ -961,7 +1069,7 @@ class MoSimApp {
                     this.system.coordinates[key] = parseFloat(e.target.value);
                     const inp = row.querySelector(`#input-coord-${key}`);
                     if (inp) inp.value = this.system.coordinates[key].toFixed(3);
-                    this.updateSimulation();
+                    this.updateSimulation({ forceDOM: true });
                 });
 
                 // Number box input event
@@ -970,7 +1078,7 @@ class MoSimApp {
                     if (this.lockedCoords.has(key)) return;
                     this.system.coordinates[key] = parseFloat(e.target.value);
                     slider.value = this.system.coordinates[key];
-                    this.updateSimulation();
+                    this.updateSimulation({ forceDOM: true });
                 });
 
                 // Lock toggle event
@@ -1011,9 +1119,47 @@ class MoSimApp {
                 stimInput.addEventListener("input", (e) => {
                     const u = parseFloat(e.target.value) / 100.0;
                     muscle.updateActivation(u, 0.05);
-                    document.getElementById(`stim-val-${muscle.name}`).innerText = `${(u * 100).toFixed(0)}%`;
-                    this.updateSimulation();
+                    const sVal = document.getElementById(`stim-val-${muscle.name}`);
+                    if (sVal) sVal.innerText = `${(u * 100).toFixed(0)}%`;
+                    this.updateSimulation({ forceDOM: true });
                 });
+            }
+        }
+
+        this.cacheDOMElements();
+    }
+
+    cacheDOMElements() {
+        this.domCache = {
+            coords: {},
+            treeForces: {},
+            hud: {
+                name: document.getElementById("hud-muscle-name"),
+                force: document.getElementById("hud-force"),
+                active: document.getElementById("hud-active"),
+                passive: document.getElementById("hud-passive"),
+                length: document.getElementById("hud-length"),
+                tendon: document.getElementById("hud-tendon"),
+                pennation: document.getElementById("hud-pennation"),
+                activation: document.getElementById("hud-activation")
+            },
+            scrubSlider: document.getElementById("motion-scrub-slider"),
+            timeInput: document.getElementById("motion-time-input")
+        };
+
+        if (this.system && this.system.coordLimits) {
+            for (const key of Object.keys(this.system.coordLimits)) {
+                this.domCache.coords[key] = {
+                    input: document.getElementById(`input-coord-${key}`),
+                    slider: document.getElementById(`slider-${key}`),
+                    badge: document.getElementById(`val-${key}`)
+                };
+            }
+        }
+
+        if (this.system && this.system.muscles) {
+            for (const muscle of this.system.muscles) {
+                this.domCache.treeForces[muscle.name] = document.getElementById(`tree-force-${muscle.name}`);
             }
         }
     }
@@ -1274,24 +1420,43 @@ class MoSimApp {
         const frame = this.currentMotion.frames[frameIndex];
         if (!frame) return;
 
+        this.simTime = frame.time;
+
         for (const [k, v] of Object.entries(frame.q)) {
             if (this.system.coordinates[k] !== undefined && !this.lockedCoords.has(k)) {
                 this.system.coordinates[k] = v;
             }
         }
 
-        const scrub = document.getElementById("motion-scrub-slider");
-        if (scrub) scrub.value = frameIndex;
-        const timeInp = document.getElementById("motion-time-input");
-        if (timeInp) timeInp.value = frame.time.toFixed(3);
+        if (frame.markers && this.showMarkers) {
+            for (const [mName, pos] of Object.entries(frame.markers)) {
+                if (this.markerMeshes[mName]) {
+                    this.markerMeshes[mName].position.set(pos[0], pos[1], pos[2]);
+                    this.markerMeshes[mName].visible = true;
+                }
+            }
+        }
 
-        this.updateSimulation();
+        if (this.domCache && this.domCache.scrubSlider) this.domCache.scrubSlider.value = frameIndex;
+        else {
+            const scrub = document.getElementById("motion-scrub-slider");
+            if (scrub) scrub.value = frameIndex;
+        }
+
+        if (this.domCache && this.domCache.timeInput) this.domCache.timeInput.value = frame.time.toFixed(3);
+        else {
+            const timeInp = document.getElementById("motion-time-input");
+            if (timeInp) timeInp.value = frame.time.toFixed(3);
+        }
+
+        this.updateSimulation({ forceDOM: true });
     }
 
     loadMotion(motionId) {
         this.activeMotionId = motionId;
         this.currentMotion = OpenSimLandmarkMotions.getMotion(motionId);
         this.currentMotionFrame = 0;
+        this.simTime = 0.0;
 
         const endLabel = document.getElementById("motion-end-label");
         if (endLabel) endLabel.innerText = this.currentMotion.duration.toFixed(3);
@@ -1730,11 +1895,66 @@ class MoSimApp {
         this.logMessage("Physics", `Forward Dynamics physics integrator: ${this.isPhysicsMode ? 'ACTIVE (RK4)' : 'OFF'}.`);
     }
 
+    applyInterpolatedMotion(time, duration) {
+        const totalFrames = this.currentMotion.numFrames;
+        if (!totalFrames || totalFrames <= 1) return;
+
+        const norm = Math.max(0, Math.min(1, time / duration));
+        const floatIdx = norm * (totalFrames - 1);
+        const f0 = Math.floor(floatIdx);
+        const f1 = Math.min(f0 + 1, totalFrames - 1);
+        const alpha = floatIdx - f0;
+
+        const frameA = this.currentMotion.frames[f0];
+        const frameB = this.currentMotion.frames[f1];
+        if (!frameA || !frameB) return;
+
+        this.currentMotionFrame = f0;
+
+        for (const [k, vA] of Object.entries(frameA.q)) {
+            if (this.system.coordinates[k] !== undefined && !this.lockedCoords.has(k)) {
+                const vB = frameB.q[k] !== undefined ? frameB.q[k] : vA;
+                this.system.coordinates[k] = (1.0 - alpha) * vA + alpha * vB;
+            }
+        }
+
+        if (this.showMarkers && frameA.markers && frameB.markers) {
+            for (const [mName, posA] of Object.entries(frameA.markers)) {
+                const mMesh = this.markerMeshes[mName];
+                const posB = frameB.markers[mName];
+                if (mMesh && posB) {
+                    mMesh.position.set(
+                        (1.0 - alpha) * posA[0] + alpha * posB[0],
+                        (1.0 - alpha) * posA[1] + alpha * posB[1],
+                        (1.0 - alpha) * posA[2] + alpha * posB[2]
+                    );
+                    mMesh.visible = true;
+                }
+            }
+        }
+
+        if (this.domCache && (this.frameCount % 4 === 0)) {
+            if (this.domCache.scrubSlider && document.activeElement !== this.domCache.scrubSlider) {
+                this.domCache.scrubSlider.value = f0;
+            }
+            if (this.domCache.timeInput && document.activeElement !== this.domCache.timeInput) {
+                this.domCache.timeInput.value = time.toFixed(3);
+            }
+        }
+
+        this.updateSimulation();
+    }
+
     /**
-     * Main Animation & Simulation Loop (60 FPS)
+     * Main Animation & Simulation Loop (Locked 60+ FPS high-precision RAF)
      */
     animate() {
         requestAnimationFrame(() => this.animate());
+
+        const now = performance.now();
+        if (!this.lastFrameTime) this.lastFrameTime = now;
+        const dt = Math.min((now - this.lastFrameTime) / 1000, 0.05);
+        this.lastFrameTime = now;
 
         if (this.isPhysicsMode) {
             let activeCoordKey = Object.keys(this.system.coordLimits)[0];
@@ -1748,23 +1968,30 @@ class MoSimApp {
                 netTorque += r * muscle.totalForce;
             }
 
-            const newAngleDeg = this.physicsEngine.stepRK4(netTorque, 0.016);
+            const newAngleDeg = this.physicsEngine.stepRK4(netTorque, Math.min(dt, 0.03));
             this.system.coordinates[activeCoordKey] = newAngleDeg;
             this.updateSimulation();
         } else if (this.isPlaying) {
-            const totalF = this.currentMotion.numFrames;
-            const deltaF = Math.max(1, Math.round(this.gaitSpeed * 1));
-            let nextFrame = this.currentMotionFrame + this.playDirection * deltaF;
+            const totalDuration = this.currentMotion.duration || 1.2;
+            this.simTime += this.playDirection * this.gaitSpeed * dt;
 
-            if (nextFrame >= totalF) {
-                if (this.isLooping) nextFrame = 0;
-                else { nextFrame = totalF - 1; this.isPlaying = false; }
-            } else if (nextFrame < 0) {
-                if (this.isLooping) nextFrame = totalF - 1;
-                else { nextFrame = 0; this.isPlaying = false; }
+            if (this.simTime >= totalDuration) {
+                if (this.isLooping) {
+                    this.simTime = this.simTime % totalDuration;
+                } else {
+                    this.simTime = totalDuration;
+                    this.isPlaying = false;
+                }
+            } else if (this.simTime < 0) {
+                if (this.isLooping) {
+                    this.simTime = (this.simTime % totalDuration + totalDuration) % totalDuration;
+                } else {
+                    this.simTime = 0;
+                    this.isPlaying = false;
+                }
             }
 
-            this.seekMotionFrame(nextFrame);
+            this.applyInterpolatedMotion(this.simTime, totalDuration);
         }
 
         this.controls.update();

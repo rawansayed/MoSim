@@ -61,13 +61,18 @@ class BiomechanicalPlotter {
      * Resize canvas to high-DPI resolution
      */
     resize() {
+        if (!this.canvas) return;
         const rect = this.canvas.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        this.canvas.width = rect.width * dpr;
-        this.canvas.height = rect.height * dpr;
-        this.ctx.scale(dpr, dpr);
-        this.width = rect.width;
-        this.height = rect.height;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const newW = Math.round(rect.width * dpr);
+        const newH = Math.round(rect.height * dpr);
+        if (this.canvas.width !== newW || this.canvas.height !== newH) {
+            this.canvas.width = newW;
+            this.canvas.height = newH;
+            this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            this.width = rect.width;
+            this.height = rect.height;
+        }
     }
 
     /**
@@ -480,12 +485,16 @@ class OpenSimPlotterWindow {
     resize() {
         if (!this.canvas) return;
         const rect = this.canvas.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        this.canvas.width = rect.width * dpr;
-        this.canvas.height = rect.height * dpr;
-        this.ctx.scale(dpr, dpr);
-        this.width = rect.width;
-        this.height = rect.height;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const newW = Math.round(rect.width * dpr);
+        const newH = Math.round(rect.height * dpr);
+        if (this.canvas.width !== newW || this.canvas.height !== newH) {
+            this.canvas.width = newW;
+            this.canvas.height = newH;
+            this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            this.width = rect.width;
+            this.height = rect.height;
+        }
     }
 
     render() {
