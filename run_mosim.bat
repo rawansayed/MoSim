@@ -31,7 +31,7 @@ echo  Features:
 echo   * 3D Biomechanics Viewport (PBR Three.js with Muscle Bulking)
 echo   * 3-Element Hill Musculotendon Active/Passive Force Tracking
 echo   * Multi-Model Support: Lower Extremity & Upper Limb
-echo   * OpenSim 4.x Interoperability (.osim XML and .mot Motion Exporter)
+echo   * MoSim 4.x Interoperability (.osim XML and .mot Motion Exporter)
 echo   * Forward Dynamics Runge-Kutta 4 Physics Engine
 echo ======================================================================
 echo Press any key to terminate the server and exit...

@@ -411,10 +411,10 @@ class BiomechanicalPlotter {
 }
 
 /**
- * OpenSim Multi-Curve Scientific Plotter Window
- * Matches the official OpenSim Plotter (Figure 1, Curve Add, Curves List, Y-Quantity vs X-Quantity)
+ * MoSim Multi-Curve Scientific Plotter Window
+ * Matches the official MoSim Plotter (Figure 1, Curve Add, Curves List, Y-Quantity vs X-Quantity)
  */
-class OpenSimPlotterWindow {
+class MoSimPlotterWindow {
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas ? canvas.getContext("2d") : null;
@@ -424,7 +424,7 @@ class OpenSimPlotterWindow {
         this.yLabel = "Quantity Value";
         this.hoverCoord = null;
 
-        // Palette of distinct curve colors matching OpenSim
+        // Palette of distinct curve colors matching MoSim
         this.palette = [
             "#38BDF8", // Cyan
             "#F43F5E", // Rose Red
@@ -509,7 +509,7 @@ class OpenSimPlotterWindow {
         const w = this.width;
         const h = this.height;
 
-        // Background (OpenSim Classic or Studio theme)
+        // Background (MoSim Classic or Studio theme)
         ctx.fillStyle = "#0c1322";
         ctx.fillRect(0, 0, w, h);
 
@@ -714,12 +714,12 @@ class OpenSimPlotterWindow {
 // Export for browser
 if (typeof window !== "undefined") {
     window.BiomechanicalPlotter = BiomechanicalPlotter;
-    window.OpenSimPlotterWindow = OpenSimPlotterWindow;
+    window.MoSimPlotterWindow = MoSimPlotterWindow;
 }
 if (typeof module !== "undefined" && module.exports) {
     module.exports = {
         BiomechanicalPlotter,
-        OpenSimPlotterWindow
+        MoSimPlotterWindow
     };
 }
 

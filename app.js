@@ -1,7 +1,7 @@
 /**
  * MoSim - Next-Generation Virtual Musculoskeletal Simulator
  * Main Application Controller & Three.js 3D Viewport Engine
- * Faithful recreation and modernization of the OpenSim 4.5 Biomechanical Environment.
+ * Faithful recreation and modernization of the MoSim 4.5 Biomechanical Environment.
  */
 
 class MoSimApp {
@@ -9,7 +9,7 @@ class MoSimApp {
         this.currentModelType = "whole_body"; // "whole_body", "lower_body", "upper_body", "right_arm", "left_arm", "right_leg", "left_leg", "head_neck"
         this.system = new WholeBodySystem("whole_body");
         this.plotter = null;
-        this.openSimPlotter = null;
+        this.mosimPlotter = null;
         this.selectedMuscle = this.system.muscles[0];
 
         // Simulation & Motion state
@@ -21,12 +21,12 @@ class MoSimApp {
         this.playDirection = 1;
         this.isLooping = true;
 
-        // OpenSim Motion Dataset
+        // MoSim Motion Dataset
         this.activeMotionId = "normal_gait";
-        this.currentMotion = OpenSimLandmarkMotions.getMotion("normal_gait");
+        this.currentMotion = MoSimLandmarkMotions.getMotion("normal_gait");
         this.currentMotionFrame = 0;
 
-        // OpenSim Tools & Solvers
+        // MoSim Tools & Solvers
         this.scaleTool = null;
         this.ikTool = null;
         this.idTool = null;
@@ -81,7 +81,7 @@ class MoSimApp {
         this.initThreeJS();
         this.initMocapMarkers();
         this.buildCurrentModel();
-        this.initOpenSimTools();
+        this.initMoSimTools();
         this.initUI();
         this.initPlotter();
         this.setupOpenModelDialog();
@@ -89,7 +89,7 @@ class MoSimApp {
         this.animate();
 
         this.logMessage("Simbody Engine", "Multibody tree initialized with 23 DOFs and 92 Hill MTUs.");
-        this.logMessage("OpenSim 4.5", "Model '3DGaitModel2392' loaded with active Hill equilibrium dynamics.");
+        this.logMessage("MoSim 4.5", "Model '3DGaitModel2392' loaded with active Hill equilibrium dynamics.");
     }
 
     /**
@@ -167,7 +167,7 @@ class MoSimApp {
         this.axesHelper.position.set(0, -0.98, 0);
         this.scene.add(this.axesHelper);
 
-        // OpenSim Center of Mass (CoM) Marker
+        // MoSim Center of Mass (CoM) Marker
         const comGeo = new THREE.SphereGeometry(0.035, 16, 16);
         const comMat = new THREE.MeshStandardMaterial({
             color: 0xfacc15,
@@ -187,7 +187,7 @@ class MoSimApp {
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(w, h);
             if (this.plotter) this.plotter.resize();
-            if (this.openSimPlotter) this.openSimPlotter.resize();
+            if (this.mosimPlotter) this.mosimPlotter.resize();
         });
 
         // Pre-allocated vectors for zero-allocation 60+ FPS pipeline
@@ -226,19 +226,19 @@ class MoSimApp {
     }
 
     /**
-     * Initialize OpenSim Computational Tools Suite
+     * Initialize MoSim Computational Tools Suite
      */
-    initOpenSimTools() {
-        this.scaleTool = new OpenSimScaleTool(this.system);
-        this.ikTool = new OpenSimInverseKinematics(this.system);
-        this.idTool = new OpenSimInverseDynamics(this.system);
-        this.soTool = new OpenSimStaticOptimization(this.system);
-        this.jraTool = new OpenSimJointReactionAnalysis(this.system);
-        this.mocoTool = new OpenSimMocoTool(this.system);
+    initMoSimTools() {
+        this.scaleTool = new MoSimScaleTool(this.system);
+        this.ikTool = new MoSimInverseKinematics(this.system);
+        this.idTool = new MoSimInverseDynamics(this.system);
+        this.soTool = new MoSimStaticOptimization(this.system);
+        this.jraTool = new MoSimJointReactionAnalysis(this.system);
+        this.mocoTool = new MoSimMocoTool(this.system);
 
-        const plotterCanvas = document.getElementById("opensim-plotter-canvas");
+        const plotterCanvas = document.getElementById("mosim-plotter-canvas");
         if (plotterCanvas) {
-            this.openSimPlotter = new OpenSimPlotterWindow(plotterCanvas);
+            this.mosimPlotter = new MoSimPlotterWindow(plotterCanvas);
         }
     }
 
@@ -934,7 +934,7 @@ class MoSimApp {
         this.currentModelType = modelKey;
         this.system = new WholeBodySystem(modelKey);
         this.buildCurrentModel();
-        this.initOpenSimTools();
+        this.initMoSimTools();
         this.rebindUI();
 
         let defaultJoint = "knee";
@@ -975,7 +975,7 @@ class MoSimApp {
         this.loadMotion(recommendedMotion);
 
         this.updateSimulation();
-        this.logMessage("OpenSim Model", `Active model changed to: ${modelKey} (Auto-loaded motion: ${recommendedMotion}).`);
+        this.logMessage("MoSim Model", `Active model changed to: ${modelKey} (Auto-loaded motion: ${recommendedMotion}).`);
     }
 
     rebindUI() {
@@ -1196,15 +1196,15 @@ class MoSimApp {
     }
 
     /**
-     * Wire up OpenSim Menubar, Subtoolbar, Floating Controls, Motion Player, and Dialogs
+     * Wire up MoSim Menubar, Subtoolbar, Floating Controls, Motion Player, and Dialogs
      */
     initUI() {
         this.rebindUI();
-        this.setupOpenSimMenuBar();
+        this.setupMoSimMenuBar();
         this.setupFloatingControls();
         this.setupMotionPlayerToolbar();
-        this.setupOpenSimToolsDialogs();
-        this.setupOpenSimPlotter();
+        this.setupMoSimToolsDialogs();
+        this.setupMoSimPlotter();
         this.setupLoggerConsole();
 
         // Model Switcher Selector
@@ -1243,7 +1243,7 @@ class MoSimApp {
         if (btnOpenModel) btnOpenModel.addEventListener("click", () => this.promptOpenModel());
 
         const btnSaveModel = document.getElementById("btn-save-model");
-        if (btnSaveModel) btnSaveModel.addEventListener("click", () => this.exportOpenSimModel());
+        if (btnSaveModel) btnSaveModel.addEventListener("click", () => this.exportMoSimModel());
 
         const btnOpenPlotter = document.getElementById("btn-open-plotter");
         if (btnOpenPlotter) btnOpenPlotter.addEventListener("click", () => openModal("modal-plotter"));
@@ -1257,9 +1257,9 @@ class MoSimApp {
     }
 
     /**
-     * Wire up OpenSim Menubar Dropdown Actions
+     * Wire up MoSim Menubar Dropdown Actions
      */
-    setupOpenSimMenuBar() {
+    setupMoSimMenuBar() {
         // File Menu
         const mapAction = (id, fn) => {
             const el = document.getElementById(id);
@@ -1268,8 +1268,8 @@ class MoSimApp {
 
         mapAction("menu-file-open", () => this.promptOpenModel());
         mapAction("menu-file-motion", () => this.loadNextMotion());
-        mapAction("menu-file-save", () => this.exportOpenSimModel());
-        mapAction("menu-file-export-osim", () => this.exportOpenSimModel());
+        mapAction("menu-file-save", () => this.exportMoSimModel());
+        mapAction("menu-file-export-osim", () => this.exportMoSimModel());
         mapAction("menu-file-export-mot", () => this.exportMotionTrajectory());
         mapAction("menu-file-export-csv", () => this.exportKinematicsCSV());
         mapAction("menu-file-snapshot", () => this.captureSnapshot());
@@ -1334,7 +1334,7 @@ class MoSimApp {
         mapAction("menu-win-coordinates", () => switchLeftTab("coordinates"));
         mapAction("menu-win-plotter", () => {
             openModal("modal-plotter");
-            if (this.openSimPlotter) this.openSimPlotter.render();
+            if (this.mosimPlotter) this.mosimPlotter.render();
         });
         mapAction("menu-win-logger", () => openModal("modal-logger"));
 
@@ -1352,7 +1352,7 @@ class MoSimApp {
             alert("Rajagopal et al. (IEEE TBME 2016)\n\nFull-body musculoskeletal walking model (23 DOFs, 80 muscles). Resolves pelvic residuals to < 1.5% body weight.");
         });
         mapAction("menu-help-about", () => {
-            alert("MoSim v1.0.0-PRO (OpenSim 4.5 Certified Architecture)\n\nDeveloped by Advanced Agentic Coding for biomechanical modeling and high-fidelity musculoskeletal simulation.");
+            alert("MoSim v1.0.0-PRO (MoSim 4.5 Certified Architecture)\n\nDeveloped by Advanced Agentic Coding for biomechanical modeling and high-fidelity musculoskeletal simulation.");
         });
     }
 
@@ -1485,7 +1485,7 @@ class MoSimApp {
 
     loadMotion(motionId) {
         this.activeMotionId = motionId;
-        this.currentMotion = OpenSimLandmarkMotions.getMotion(motionId);
+        this.currentMotion = MoSimLandmarkMotions.getMotion(motionId);
         this.currentMotionFrame = 0;
         this.simTime = 0.0;
 
@@ -1512,9 +1512,9 @@ class MoSimApp {
     }
 
     /**
-     * Wire up OpenSim Tool Dialogs (Scale, IK, ID)
+     * Wire up MoSim Tool Dialogs (Scale, IK, ID)
      */
-    setupOpenSimToolsDialogs() {
+    setupMoSimToolsDialogs() {
         // Run Scale Tool
         const btnRunScale = document.getElementById("btn-run-scale");
         if (btnRunScale) {
@@ -1571,10 +1571,10 @@ class MoSimApp {
 
                 this.logMessage("Inverse Dynamics", `Net joint moments computed. Peak knee moment: ${res.peakMoments.knee_max_Nm} N·m.`);
 
-                if (this.openSimPlotter) {
+                if (this.mosimPlotter) {
                     const times = res.data.map(d => d.time);
-                    this.openSimPlotter.addCurve("Knee Moment (N·m)", times, res.data.map(d => d.knee_moment), "Time (s)", "Torque (N·m)");
-                    this.openSimPlotter.addCurve("Hip Moment (N·m)", times, res.data.map(d => d.hip_moment), "Time (s)", "Torque (N·m)");
+                    this.mosimPlotter.addCurve("Knee Moment (N·m)", times, res.data.map(d => d.knee_moment), "Time (s)", "Torque (N·m)");
+                    this.mosimPlotter.addCurve("Hip Moment (N·m)", times, res.data.map(d => d.hip_moment), "Time (s)", "Torque (N·m)");
                     this.updatePlotCurvesList();
                 }
             });
@@ -1582,9 +1582,9 @@ class MoSimApp {
     }
 
     /**
-     * Wire up OpenSim Multi-Curve Scientific Plotter
+     * Wire up MoSim Multi-Curve Scientific Plotter
      */
-    setupOpenSimPlotter() {
+    setupMoSimPlotter() {
         const btnAdd = document.getElementById("btn-add-plot-curve");
         if (btnAdd) {
             btnAdd.addEventListener("click", () => {
@@ -1622,8 +1622,8 @@ class MoSimApp {
                     yLabel = "Activation (0-1)";
                 }
 
-                if (this.openSimPlotter) {
-                    this.openSimPlotter.addCurve(name, xData, yData, xQuant === "time" ? "Time (s)" : "Phase (%)", yLabel);
+                if (this.mosimPlotter) {
+                    this.mosimPlotter.addCurve(name, xData, yData, xQuant === "time" ? "Time (s)" : "Phase (%)", yLabel);
                     this.updatePlotCurvesList();
                 }
             });
@@ -1632,8 +1632,8 @@ class MoSimApp {
         const btnClear = document.getElementById("btn-clear-plot-curves");
         if (btnClear) {
             btnClear.addEventListener("click", () => {
-                if (this.openSimPlotter) {
-                    this.openSimPlotter.clearCurves();
+                if (this.mosimPlotter) {
+                    this.mosimPlotter.clearCurves();
                     this.updatePlotCurvesList();
                 }
             });
@@ -1642,14 +1642,14 @@ class MoSimApp {
         const btnExportCsv = document.getElementById("btn-export-plot-csv");
         if (btnExportCsv) {
             btnExportCsv.addEventListener("click", () => {
-                if (this.openSimPlotter) {
-                    const csv = this.openSimPlotter.exportToCSV();
+                if (this.mosimPlotter) {
+                    const csv = this.mosimPlotter.exportToCSV();
                     if (csv) {
                         const blob = new Blob([csv], { type: "text/csv" });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement("a");
                         a.href = url;
-                        a.download = `OpenSim_Plot_Data_${Date.now()}.csv`;
+                        a.download = `MoSim_Plot_Data_${Date.now()}.csv`;
                         a.click();
                         URL.revokeObjectURL(url);
                     }
@@ -1660,10 +1660,10 @@ class MoSimApp {
 
     updatePlotCurvesList() {
         const listContainer = document.getElementById("plot-curves-list");
-        if (!listContainer || !this.openSimPlotter) return;
+        if (!listContainer || !this.mosimPlotter) return;
         listContainer.innerHTML = "";
 
-        this.openSimPlotter.curves.forEach(c => {
+        this.mosimPlotter.curves.forEach(c => {
             const div = document.createElement("div");
             div.style.cssText = "display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;";
             div.innerHTML = `
@@ -1671,14 +1671,14 @@ class MoSimApp {
                     <span style="display:inline-block; width:10px; height:10px; background:${c.color}; border-radius:2px;"></span>
                     <span style="color:#f1f5f9; font-weight:500;">${c.name}</span>
                 </div>
-                <button style="background:transparent; border:none; color:#ef4444; cursor:pointer;" onclick="window.app.openSimPlotter.removeCurve('${c.id}'); window.app.updatePlotCurvesList();">✕</button>
+                <button style="background:transparent; border:none; color:#ef4444; cursor:pointer;" onclick="window.app.mosimPlotter.removeCurve('${c.id}'); window.app.updatePlotCurvesList();">✕</button>
             `;
             listContainer.appendChild(div);
         });
     }
 
     /**
-     * OpenSim Messages / Console Logger
+     * MoSim Messages / Console Logger
      */
     setupLoggerConsole() {
         const btnClear = document.getElementById("btn-clear-logger");
@@ -1710,7 +1710,7 @@ class MoSimApp {
     }
 
     /**
-     * Toggle OpenSim Classic Studio Grey Theme / Modern Dark Theme
+     * Toggle MoSim Classic Studio Grey Theme / Modern Dark Theme
      */
     toggleTheme() {
         this.currentTheme = this.currentTheme === "dark" ? "classic" : "dark";
@@ -1725,7 +1725,7 @@ class MoSimApp {
             this.scene.background = new THREE.Color(0x0a0f1d);
             this.scene.fog = new THREE.FogExp2(0x0a0f1d, 0.22);
         }
-        this.logMessage("Preferences", `Theme toggled to OpenSim ${this.currentTheme.toUpperCase()} mode.`);
+        this.logMessage("Preferences", `Theme toggled to MoSim ${this.currentTheme.toUpperCase()} mode.`);
     }
 
     setMuscleColorMode(mode) {
@@ -1746,9 +1746,9 @@ class MoSimApp {
         const res = this.jraTool.solve(this.activeMotionId, [0.0, 1.2]);
         this.logMessage("JRA", `Joint Reaction Analysis computed: Peak Tibiofemoral Compression = ${res.peakKneeContactBW} BW (~${Math.round(res.peakKneeContactBW * 75 * 9.81)} N).`);
 
-        if (this.openSimPlotter) {
+        if (this.mosimPlotter) {
             const times = res.data.map(d => d.time);
-            this.openSimPlotter.addCurve("Knee Contact (BW)", times, res.data.map(d => d.tibiofemoral_compression_BW), "Time (s)", "Contact (BW)");
+            this.mosimPlotter.addCurve("Knee Contact (BW)", times, res.data.map(d => d.tibiofemoral_compression_BW), "Time (s)", "Contact (BW)");
             openModal("modal-plotter");
             this.updatePlotCurvesList();
         }
@@ -1758,10 +1758,10 @@ class MoSimApp {
         const res = this.mocoTool.solve("minimize_effort", 1.0);
         this.logMessage("Moco", `Direct Collocation Optimal Control Converged in ${res.iterations} iterations (Hermite-Simpson CasADi). Final Cost: ${res.finalCost}.`);
 
-        if (this.openSimPlotter) {
+        if (this.mosimPlotter) {
             const times = res.trajectory.map(d => d.time);
-            this.openSimPlotter.addCurve("Moco Knee Angle (°)", times, res.trajectory.map(d => d.q_knee), "Time (s)", "Angle (°)");
-            this.openSimPlotter.addCurve("Moco Knee Torque (N·m)", times, res.trajectory.map(d => d.control_knee), "Time (s)", "Torque (N·m)");
+            this.mosimPlotter.addCurve("Moco Knee Angle (°)", times, res.trajectory.map(d => d.q_knee), "Time (s)", "Angle (°)");
+            this.mosimPlotter.addCurve("Moco Knee Torque (N·m)", times, res.trajectory.map(d => d.control_knee), "Time (s)", "Torque (N·m)");
             openModal("modal-plotter");
             this.updatePlotCurvesList();
         }
@@ -2199,9 +2199,9 @@ class MoSimApp {
         this.logMessage("Export", `Exported and downloaded native MoSim model file: ${name}.mosim`);
     }
 
-    exportOpenSimModel() {
+    exportMoSimModel() {
         const modelName = `MoSim_${this.currentModelType}_Model`;
-        const xml = OpenSimIO.exportToOsimXml(this.system, modelName);
+        const xml = MoSimIO.exportToOsimXml(this.system, modelName);
         const blob = new Blob([xml], { type: "application/xml" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -2209,14 +2209,14 @@ class MoSimApp {
         a.download = `${modelName}.osim`;
         a.click();
         URL.revokeObjectURL(url);
-        this.logMessage("Export", `Downloaded OpenSim 4.x XML model: ${modelName}.osim`);
+        this.logMessage("Export", `Downloaded MoSim 4.x XML model: ${modelName}.osim`);
     }
 
     exportMotionTrajectory() {
         const coordNames = Object.keys(this.system.coordLimits);
         const rows = this.currentMotion.frames.map(f => f.q);
         const timeArray = this.currentMotion.times;
-        const motText = OpenSimIO.exportMotionFile(timeArray, coordNames, rows);
+        const motText = MoSimIO.exportMotionFile(timeArray, coordNames, rows);
         const blob = new Blob([motText], { type: "text/plain" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -2224,7 +2224,7 @@ class MoSimApp {
         a.download = `MoSim_${this.activeMotionId}.mot`;
         a.click();
         URL.revokeObjectURL(url);
-        this.logMessage("Export", `Downloaded OpenSim motion trajectory: MoSim_${this.activeMotionId}.mot`);
+        this.logMessage("Export", `Downloaded MoSim motion trajectory: MoSim_${this.activeMotionId}.mot`);
     }
 
     exportKinematicsCSV() {
@@ -2248,7 +2248,7 @@ class MoSimApp {
         const dataUrl = this.renderer.domElement.toDataURL("image/png");
         const a = document.createElement("a");
         a.href = dataUrl;
-        a.download = `OpenSim_3D_Snapshot_${Date.now()}.png`;
+        a.download = `MoSim_3D_Snapshot_${Date.now()}.png`;
         a.click();
         this.logMessage("View", "Captured high-resolution 3D viewport snapshot.");
     }

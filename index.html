@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MoSim - OpenSim 4.5 Musculoskeletal Virtual Simulator</title>
-    <meta name="description" content="MoSim: Complete OpenSim 4.5 virtual musculoskeletal simulation environment with multibody dynamics, 3-element Hill-type muscles, Scale, IK, ID, SO, CMC, FD, and JRA tools.">
+    <title>MoSim - MoSim 4.5 Musculoskeletal Virtual Simulator</title>
+    <meta name="description" content="MoSim: Complete MoSim 4.5 virtual musculoskeletal simulation environment with multibody dynamics, 3-element Hill-type muscles, Scale, IK, ID, SO, CMC, FD, and JRA tools.">
     <link rel="stylesheet" href="styles.css">
 
     <!-- Three.js and OrbitControls (Offline local bundled with CDN fallback) -->
@@ -34,17 +34,17 @@
         </div>
     </div>
 
-    <!-- 1. Authentic OpenSim Top Menu Bar -->
-    <nav class="opensim-menubar" id="opensim-menubar">
+    <!-- 1. Authentic MoSim Top Menu Bar -->
+    <nav class="mosim-menubar" id="mosim-menubar">
         <!-- File Menu -->
-        <div class="opensim-menu-item">
+        <div class="mosim-menu-item">
             <span>File</span>
-            <div class="opensim-dropdown">
+            <div class="mosim-dropdown">
                 <div class="dropdown-row" id="menu-file-open"><span>Open Model (.osim)...</span><span class="dropdown-shortcut">Ctrl+O</span></div>
                 <div class="dropdown-row" id="menu-file-motion"><span>Open Motion (.mot)...</span><span class="dropdown-shortcut">Ctrl+M</span></div>
                 <div class="dropdown-row" id="menu-file-save"><span>Save Model (.osim)</span><span class="dropdown-shortcut">Ctrl+S</span></div>
                 <div class="dropdown-separator"></div>
-                <div class="dropdown-row" id="menu-file-export-osim"><span>Export OpenSim 4.x XML</span><span class="dropdown-shortcut">.osim</span></div>
+                <div class="dropdown-row" id="menu-file-export-osim"><span>Export MoSim 4.x XML</span><span class="dropdown-shortcut">.osim</span></div>
                 <div class="dropdown-row" id="menu-file-export-mot"><span>Export Motion Trajectory</span><span class="dropdown-shortcut">.mot</span></div>
                 <div class="dropdown-row" id="menu-file-export-csv"><span>Export Kinematics CSV</span><span class="dropdown-shortcut">.csv</span></div>
                 <div class="dropdown-separator"></div>
@@ -53,10 +53,10 @@
         </div>
 
         <!-- Edit Menu -->
-        <div class="opensim-menu-item">
+        <div class="mosim-menu-item">
             <span>Edit</span>
-            <div class="opensim-dropdown">
-                <div class="dropdown-row" id="menu-edit-theme"><span>Toggle OpenSim Classic / Dark Theme</span><span class="dropdown-shortcut">F2</span></div>
+            <div class="mosim-dropdown">
+                <div class="dropdown-row" id="menu-edit-theme"><span>Toggle MoSim Classic / Dark Theme</span><span class="dropdown-shortcut">F2</span></div>
                 <div class="dropdown-separator"></div>
                 <div class="dropdown-row" id="menu-edit-reset-pose"><span>Reset Coordinates to Default</span><span class="dropdown-shortcut">Ctrl+R</span></div>
                 <div class="dropdown-row" id="menu-edit-lock-all"><span>Lock All Coordinates</span><span class="dropdown-shortcut">Ctrl+L</span></div>
@@ -65,9 +65,9 @@
         </div>
 
         <!-- View Menu -->
-        <div class="opensim-menu-item">
+        <div class="mosim-menu-item">
             <span>View</span>
-            <div class="opensim-dropdown">
+            <div class="mosim-dropdown">
                 <div class="dropdown-row" id="menu-view-iso"><span>Isometric View (3D)</span><span class="dropdown-shortcut">1</span></div>
                 <div class="dropdown-row" id="menu-view-front"><span>Frontal / Anterior (+Z)</span><span class="dropdown-shortcut">2</span></div>
                 <div class="dropdown-row" id="menu-view-side"><span>Lateral / Sagittal (+X)</span><span class="dropdown-shortcut">3</span></div>
@@ -82,14 +82,14 @@
                 <div class="dropdown-row" id="menu-view-muscle-activation"><span>Color Muscles by: Activation (0-1)</span></div>
                 <div class="dropdown-row" id="menu-view-muscle-length"><span>Color Muscles by: Fiber Length (lm/lm0)</span></div>
                 <div class="dropdown-row" id="menu-view-muscle-force"><span>Color Muscles by: Tendon Force (Ft)</span></div>
-                <div class="dropdown-row" id="menu-view-muscle-crimson"><span>Color Muscles by: OpenSim Crimson Red</span></div>
+                <div class="dropdown-row" id="menu-view-muscle-crimson"><span>Color Muscles by: MoSim Crimson Red</span></div>
             </div>
         </div>
 
-        <!-- Tools Menu (OpenSim Simulation Pipeline) -->
-        <div class="opensim-menu-item">
+        <!-- Tools Menu (MoSim Simulation Pipeline) -->
+        <div class="mosim-menu-item">
             <span>Tools</span>
-            <div class="opensim-dropdown">
+            <div class="mosim-dropdown">
                 <div class="dropdown-row" id="menu-tool-scale"><span>Scale Model...</span><span class="dropdown-shortcut">Scale</span></div>
                 <div class="dropdown-row" id="menu-tool-ik"><span>Inverse Kinematics (IK)...</span><span class="dropdown-shortcut">IK</span></div>
                 <div class="dropdown-row" id="menu-tool-id"><span>Inverse Dynamics (ID)...</span><span class="dropdown-shortcut">ID</span></div>
@@ -99,25 +99,25 @@
                 <div class="dropdown-row" id="menu-tool-fd"><span>Forward Dynamics Simulation...</span><span class="dropdown-shortcut">FD</span></div>
                 <div class="dropdown-separator"></div>
                 <div class="dropdown-row" id="menu-tool-jra"><span>Joint Reaction Analysis (JRA)...</span><span class="dropdown-shortcut">JRA</span></div>
-                <div class="dropdown-row" id="menu-tool-moco"><span>OpenSim Moco Direct Collocation...</span><span class="dropdown-shortcut">Moco</span></div>
+                <div class="dropdown-row" id="menu-tool-moco"><span>MoSim Moco Direct Collocation...</span><span class="dropdown-shortcut">Moco</span></div>
             </div>
         </div>
 
         <!-- Window Menu -->
-        <div class="opensim-menu-item">
+        <div class="mosim-menu-item">
             <span>Window</span>
-            <div class="opensim-dropdown">
+            <div class="mosim-dropdown">
                 <div class="dropdown-row" id="menu-win-navigator"><span>Navigator</span></div>
                 <div class="dropdown-row" id="menu-win-coordinates"><span>Coordinates</span></div>
-                <div class="dropdown-row" id="menu-win-plotter"><span>OpenSim Plotter</span><span class="dropdown-shortcut">Ctrl+P</span></div>
+                <div class="dropdown-row" id="menu-win-plotter"><span>MoSim Plotter</span><span class="dropdown-shortcut">Ctrl+P</span></div>
                 <div class="dropdown-row" id="menu-win-logger"><span>Messages / Output Console</span><span class="dropdown-shortcut">Ctrl+`</span></div>
             </div>
         </div>
 
         <!-- Help Menu -->
-        <div class="opensim-menu-item">
+        <div class="mosim-menu-item">
             <span>Help</span>
-            <div class="opensim-dropdown">
+            <div class="mosim-dropdown">
                 <div class="dropdown-row" id="menu-help-tutorial-1"><span>Tutorial 1: Intro to Musculoskeletal Modeling</span></div>
                 <div class="dropdown-row" id="menu-help-tutorial-2"><span>Tutorial 2: Tendon Transfer Simulation</span></div>
                 <div class="dropdown-row" id="menu-help-tutorial-3"><span>Tutorial 3: Scaling, IK, and ID</span></div>
@@ -128,13 +128,13 @@
                 <div class="dropdown-row" id="menu-help-dembia-exo"><span>Study 4: Exoskeleton Assistance (Dembia 2017)</span></div>
                 <div class="dropdown-row" id="menu-help-dembia-moco"><span>Study 5: Optimal Control Moco (Dembia 2020)</span></div>
                 <div class="dropdown-separator"></div>
-                <div class="dropdown-row" id="menu-help-about"><span>About MoSim (OpenSim Compatibility)</span></div>
+                <div class="dropdown-row" id="menu-help-about"><span>About MoSim (MoSim Compatibility)</span></div>
             </div>
         </div>
     </nav>
 
-    <!-- 2. Authentic OpenSim Top Sub-Toolbar -->
-    <header class="opensim-subtoolbar">
+    <!-- 2. Authentic MoSim Top Sub-Toolbar -->
+    <header class="mosim-subtoolbar">
         <button class="tool-icon-btn" id="btn-open-model" title="Open Model (.osim)">
             <span>📂 Open</span>
         </button>
@@ -144,7 +144,7 @@
 
         <div class="tool-separator"></div>
 
-        <!-- Model Switcher Dropdown (Matching OpenSim Models) -->
+        <!-- Model Switcher Dropdown (Matching MoSim Models) -->
         <div style="display:flex; align-items:center; gap: 5px;">
             <span style="font-size: 11px; color: #94a3b8; font-weight: 500;">Model:</span>
             <select id="select-model" class="topbar-select" style="min-width: 250px;">
@@ -205,7 +205,7 @@
         <button class="tool-icon-btn" id="btn-toggle-coordinates" title="Show/Hide Coordinates">
             <span>📐 Coordinates</span>
         </button>
-        <button class="tool-icon-btn" id="btn-open-plotter" title="Open OpenSim Plotter (Figure 1)">
+        <button class="tool-icon-btn" id="btn-open-plotter" title="Open MoSim Plotter (Figure 1)">
             <span>📊 Plotter</span>
         </button>
         <button class="tool-icon-btn" id="btn-toggle-logger" title="Show Messages / Console Logger">
@@ -215,7 +215,7 @@
         <div class="tool-separator" style="margin-left:auto;"></div>
 
         <!-- Theme Toggle -->
-        <button class="tool-icon-btn" id="btn-theme-toggle" title="Switch Theme (OpenSim Classic Studio / Modern Dark)">
+        <button class="tool-icon-btn" id="btn-theme-toggle" title="Switch Theme (MoSim Classic Studio / Modern Dark)">
             <span>🎨 Theme</span>
         </button>
 
@@ -226,7 +226,7 @@
 
     <!-- Main Workspace Grid -->
     <main class="main-workspace">
-        <!-- Left Panel: Docked OpenSim Navigator & Coordinates Pane -->
+        <!-- Left Panel: Docked MoSim Navigator & Coordinates Pane -->
         <aside class="glass-panel left-explorer" id="left-dock-pane">
             <div class="tab-nav" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                 <button class="tab-btn active" id="tab-nav-navigator" onclick="switchLeftTab('navigator')">Navigator</button>
@@ -307,8 +307,8 @@
         <section class="center-viewport">
             <div id="canvas-container"></div>
 
-            <!-- OpenSim Floating Camera Control Cluster (matching 29164133.png top-left) -->
-            <div class="opensim-floating-view-toolbar" title="OpenSim 3D Camera Orientation Cluster">
+            <!-- MoSim Floating Camera Control Cluster (matching 29164133.png top-left) -->
+            <div class="mosim-floating-view-toolbar" title="MoSim 3D Camera Orientation Cluster">
                 <button class="cam-cube-btn iso" id="cam-iso" title="Isometric View (3D)">ISO</button>
                 <button class="cam-cube-btn front" id="cam-front" title="Front View (+Z)">FRT</button>
                 <button class="cam-cube-btn side" id="cam-right" title="Right Lateral (+X)">RGT</button>
@@ -331,9 +331,9 @@
                 <span>⚙ Open View Controls</span>
             </button>
 
-            <!-- OpenSim Watermark (matching 29164133.png bottom-left) -->
-            <div class="opensim-watermark">
-                <span>🏃 OpenSim 4.5</span>
+            <!-- MoSim Watermark (matching 29164133.png bottom-left) -->
+            <div class="mosim-watermark">
+                <span>🏃 MoSim 4.5</span>
             </div>
 
             <!-- Real-Time Selected Muscle Telemetry HUD -->
@@ -375,7 +375,7 @@
             <div class="action-inspector-bar" id="action-inspector-bar">
                 <div class="inspector-text">
                     <span class="inspector-tag" id="inspector-tag">ACTION INFO</span>
-                    <span id="inspector-message">OpenSim 4.5 Biomechanical Environment loaded and ready.</span>
+                    <span id="inspector-message">MoSim 4.5 Biomechanical Environment loaded and ready.</span>
                 </div>
                 <span style="font-size: 10px; color: var(--text-muted);" id="inspector-status-badge">Simbody Engine Online</span>
             </div>
@@ -448,7 +448,7 @@
     </main>
 
     <!-- 3. Dedicated Bottom Motion Player Toolbar (matching 29164139.png) -->
-    <footer class="opensim-motion-player-bar" id="motion-player-toolbar">
+    <footer class="mosim-motion-player-bar" id="motion-player-toolbar">
         <div class="motion-time-block">
             <span>Time</span>
             <input type="text" id="motion-time-input" class="motion-input-box" value="0.000">
@@ -485,24 +485,24 @@
     </footer>
 
     <!-- =========================================================================
-         OPENSIM TOOL DIALOG MODALS (Scale, IK, ID, SO, CMC, FD, JRA, Moco, Plotter, Logger)
+         MOSIM TOOL DIALOG MODALS (Scale, IK, ID, SO, CMC, FD, JRA, Moco, Plotter, Logger)
          ========================================================================= -->
 
     <!-- Modal 0: Open MoSim Model (.mosim) Dialog -->
-    <div class="opensim-modal-backdrop" id="modal-open-model">
-        <div class="opensim-modal-dialog" style="max-width: 680px; width: 95%;">
-            <div class="opensim-dialog-titlebar">
+    <div class="mosim-modal-backdrop" id="modal-open-model">
+        <div class="mosim-modal-dialog" style="max-width: 680px; width: 95%;">
+            <div class="mosim-dialog-titlebar">
                 <div class="dialog-title-left">
                     <span>📂</span> <span>Open MoSim Model (.mosim)</span>
                 </div>
                 <button class="dialog-close-btn" onclick="closeModal('modal-open-model')">✕</button>
             </div>
-            <div class="opensim-dialog-tabs" id="open-model-tabs">
+            <div class="mosim-dialog-tabs" id="open-model-tabs">
                 <button class="dialog-tab-btn active" id="tab-btn-model-examples" onclick="switchModelDialogTab('examples')">Model Library</button>
                 <button class="dialog-tab-btn" id="tab-btn-model-import" onclick="switchModelDialogTab('import')">Import .mosim File</button>
                 <button class="dialog-tab-btn" id="tab-btn-model-export" onclick="switchModelDialogTab('export')">Save Current (.mosim)</button>
             </div>
-            <div class="opensim-dialog-body" style="max-height: 480px; overflow-y: auto;">
+            <div class="mosim-dialog-body" style="max-height: 480px; overflow-y: auto;">
                 <!-- Tab 1: Examples Library -->
                 <div id="tab-view-model-examples">
                     <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.5;">
@@ -544,7 +544,7 @@
 
                 <!-- Tab 3: Save Current Model as .mosim -->
                 <div id="tab-view-model-export" style="display: none;">
-                    <fieldset class="opensim-groupbox">
+                    <fieldset class="mosim-groupbox">
                         <legend>Save Model as .mosim</legend>
                         <div class="dialog-row">
                             <label>File Name</label>
@@ -565,27 +565,27 @@
                     </fieldset>
                 </div>
             </div>
-            <div class="opensim-dialog-footer">
+            <div class="mosim-dialog-footer">
                 <button class="dialog-action-btn" onclick="closeModal('modal-open-model')">Close</button>
             </div>
         </div>
     </div>
 
     <!-- Modal 1: Inverse Kinematics (IK) Tool Dialog (matching 29164199.png) -->
-    <div class="opensim-modal-backdrop" id="modal-ik">
-        <div class="opensim-modal-dialog">
-            <div class="opensim-dialog-titlebar">
+    <div class="mosim-modal-backdrop" id="modal-ik">
+        <div class="mosim-modal-dialog">
+            <div class="mosim-dialog-titlebar">
                 <div class="dialog-title-left">
                     <span>🏃</span> <span>Inverse Kinematics Tool</span>
                 </div>
                 <button class="dialog-close-btn" onclick="closeModal('modal-ik')">✕</button>
             </div>
-            <div class="opensim-dialog-tabs">
+            <div class="mosim-dialog-tabs">
                 <button class="dialog-tab-btn active">Settings</button>
                 <button class="dialog-tab-btn">Weights</button>
             </div>
-            <div class="opensim-dialog-body">
-                <fieldset class="opensim-groupbox">
+            <div class="mosim-dialog-body">
+                <fieldset class="mosim-groupbox">
                     <legend>Current Model</legend>
                     <div class="dialog-row">
                         <label>Name</label>
@@ -597,7 +597,7 @@
                     </div>
                 </fieldset>
 
-                <fieldset class="opensim-groupbox">
+                <fieldset class="mosim-groupbox">
                     <legend>IK Trial</legend>
                     <div class="dialog-row">
                         <label>Marker data for trial</label>
@@ -614,7 +614,7 @@
                     </div>
                 </fieldset>
 
-                <fieldset class="opensim-groupbox">
+                <fieldset class="mosim-groupbox">
                     <legend>Output</legend>
                     <div class="dialog-row">
                         <label>Motion File</label>
@@ -627,7 +627,7 @@
                     <!-- IK execution telemetry results -->
                 </div>
             </div>
-            <div class="opensim-dialog-footer">
+            <div class="mosim-dialog-footer">
                 <button class="dialog-action-btn" onclick="closeModal('modal-ik')">Close</button>
                 <button class="dialog-action-btn primary" id="btn-run-ik">Run</button>
             </div>
@@ -635,20 +635,20 @@
     </div>
 
     <!-- Modal 2: Inverse Dynamics (ID) Tool Dialog (matching 29164196.png) -->
-    <div class="opensim-modal-backdrop" id="modal-id">
-        <div class="opensim-modal-dialog">
-            <div class="opensim-dialog-titlebar">
+    <div class="mosim-modal-backdrop" id="modal-id">
+        <div class="mosim-modal-dialog">
+            <div class="mosim-dialog-titlebar">
                 <div class="dialog-title-left">
                     <span>🏃</span> <span>Inverse Dynamics Tool</span>
                 </div>
                 <button class="dialog-close-btn" onclick="closeModal('modal-id')">✕</button>
             </div>
-            <div class="opensim-dialog-tabs">
+            <div class="mosim-dialog-tabs">
                 <button class="dialog-tab-btn active">Main Settings</button>
                 <button class="dialog-tab-btn">External Loads</button>
             </div>
-            <div class="opensim-dialog-body">
-                <fieldset class="opensim-groupbox">
+            <div class="mosim-dialog-body">
+                <fieldset class="mosim-groupbox">
                     <legend>Input</legend>
                     <div class="dialog-row">
                         <label>Loaded motion</label>
@@ -676,7 +676,7 @@
                     </div>
                 </fieldset>
 
-                <fieldset class="opensim-groupbox">
+                <fieldset class="mosim-groupbox">
                     <legend>Time Range</legend>
                     <div class="dialog-row">
                         <label>Time range to process</label>
@@ -688,7 +688,7 @@
                     </div>
                 </fieldset>
 
-                <fieldset class="opensim-groupbox">
+                <fieldset class="mosim-groupbox">
                     <legend>Output Directory</legend>
                     <div class="dialog-row">
                         <label>Directory</label>
@@ -701,7 +701,7 @@
                     <!-- ID execution telemetry results -->
                 </div>
             </div>
-            <div class="opensim-dialog-footer">
+            <div class="mosim-dialog-footer">
                 <button class="dialog-action-btn" onclick="closeModal('modal-id')">Close</button>
                 <button class="dialog-action-btn primary" id="btn-run-id">Run</button>
             </div>
@@ -709,21 +709,21 @@
     </div>
 
     <!-- Modal 3: Scale Model Tool Dialog (matching 29164204.png) -->
-    <div class="opensim-modal-backdrop" id="modal-scale">
-        <div class="opensim-modal-dialog" style="width:680px;">
-            <div class="opensim-dialog-titlebar">
+    <div class="mosim-modal-backdrop" id="modal-scale">
+        <div class="mosim-modal-dialog" style="width:680px;">
+            <div class="mosim-dialog-titlebar">
                 <div class="dialog-title-left">
                     <span>📏</span> <span>Scale Tool</span>
                 </div>
                 <button class="dialog-close-btn" onclick="closeModal('modal-scale')">✕</button>
             </div>
-            <div class="opensim-dialog-tabs">
+            <div class="mosim-dialog-tabs">
                 <button class="dialog-tab-btn active">Settings</button>
                 <button class="dialog-tab-btn">Scale Factors</button>
                 <button class="dialog-tab-btn">Static Pose Weights</button>
             </div>
-            <div class="opensim-dialog-body">
-                <fieldset class="opensim-groupbox">
+            <div class="mosim-dialog-body">
+                <fieldset class="mosim-groupbox">
                     <legend>Subject Anthropometry</legend>
                     <div class="dialog-row">
                         <label>Subject Mass (kg)</label>
@@ -735,7 +735,7 @@
                     </div>
                 </fieldset>
 
-                <fieldset class="opensim-groupbox">
+                <fieldset class="mosim-groupbox">
                     <legend>Applied Scale Factors per Body Segment</legend>
                     <div style="max-height: 160px; overflow-y: auto; font-size: 11px;">
                         <table style="width:100%; border-collapse:collapse; color:#cbd5e1;">
@@ -761,32 +761,32 @@
                     <!-- Scaling results summary -->
                 </div>
             </div>
-            <div class="opensim-dialog-footer">
+            <div class="mosim-dialog-footer">
                 <button class="dialog-action-btn" onclick="closeModal('modal-scale')">Close</button>
                 <button class="dialog-action-btn primary" id="btn-run-scale">Run</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal 4: OpenSim Multi-Curve Plotter Window (matching 29164146.png) -->
-    <div class="opensim-modal-backdrop" id="modal-plotter">
-        <div class="opensim-modal-dialog" style="width:850px; max-width:95vw;">
-            <div class="opensim-dialog-titlebar">
+    <!-- Modal 4: MoSim Multi-Curve Plotter Window (matching 29164146.png) -->
+    <div class="mosim-modal-backdrop" id="modal-plotter">
+        <div class="mosim-modal-dialog" style="width:850px; max-width:95vw;">
+            <div class="mosim-dialog-titlebar">
                 <div class="dialog-title-left">
                     <span>📊</span> <span>Plotter - Figure 1</span>
                 </div>
                 <button class="dialog-close-btn" onclick="closeModal('modal-plotter')">✕</button>
             </div>
-            <div class="opensim-dialog-body" style="padding:10px;">
+            <div class="mosim-dialog-body" style="padding:10px;">
                 <!-- Canvas Figure 1 -->
                 <div style="height:320px; width:100%; position:relative;">
-                    <canvas id="opensim-plotter-canvas"></canvas>
+                    <canvas id="mosim-plotter-canvas"></canvas>
                 </div>
 
                 <!-- Bottom Controls (matching 29164146.png Curve Add / Curves List) -->
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
                     <!-- Curve Add -->
-                    <fieldset class="opensim-groupbox" style="margin-bottom:0;">
+                    <fieldset class="mosim-groupbox" style="margin-bottom:0;">
                         <legend>Curve Add</legend>
                         <div class="dialog-row">
                             <label style="width:90px;">Curve Name</label>
@@ -818,7 +818,7 @@
                     </fieldset>
 
                     <!-- Curves List -->
-                    <fieldset class="opensim-groupbox" style="margin-bottom:0;">
+                    <fieldset class="mosim-groupbox" style="margin-bottom:0;">
                         <legend>Curves List</legend>
                         <div id="plot-curves-list" style="height:115px; overflow-y:auto; background:rgba(0,0,0,0.3); border:1px solid #334155; border-radius:3px; padding:6px; font-size:11px;">
                             <!-- Active plotted curves list -->
@@ -830,27 +830,27 @@
                     </fieldset>
                 </div>
             </div>
-            <div class="opensim-dialog-footer">
+            <div class="mosim-dialog-footer">
                 <button class="dialog-action-btn" onclick="closeModal('modal-plotter')">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal 5: OpenSim Messages / Output Console Logger -->
-    <div class="opensim-modal-backdrop" id="modal-logger">
-        <div class="opensim-modal-dialog" style="width:750px;">
-            <div class="opensim-dialog-titlebar">
+    <!-- Modal 5: MoSim Messages / Output Console Logger -->
+    <div class="mosim-modal-backdrop" id="modal-logger">
+        <div class="mosim-modal-dialog" style="width:750px;">
+            <div class="mosim-dialog-titlebar">
                 <div class="dialog-title-left">
-                    <span>📟</span> <span>OpenSim Messages & Output Console</span>
+                    <span>📟</span> <span>MoSim Messages & Output Console</span>
                 </div>
                 <button class="dialog-close-btn" onclick="closeModal('modal-logger')">✕</button>
             </div>
-            <div class="opensim-dialog-body" style="background:#090d16; font-family:monospace; font-size:11px; color:#a5f3fc; height:350px; overflow-y:auto; padding:12px;" id="logger-console-text">
+            <div class="mosim-dialog-body" style="background:#090d16; font-family:monospace; font-size:11px; color:#a5f3fc; height:350px; overflow-y:auto; padding:12px;" id="logger-console-text">
                 [00:00:00] [Simbody Engine] Multibody tree initialized.<br>
-                [00:00:00] [OpenSim 4.5] Model '3DGaitModel2392' loaded with 23 DOFs and 92 Hill MTUs.<br>
+                [00:00:00] [MoSim 4.5] Model '3DGaitModel2392' loaded with 23 DOFs and 92 Hill MTUs.<br>
                 [00:00:00] [Visualizer] Three.js WebGL canvas context active.
             </div>
-            <div class="opensim-dialog-footer">
+            <div class="mosim-dialog-footer">
                 <button class="dialog-action-btn" id="btn-clear-logger">Clear</button>
                 <button class="dialog-action-btn" id="btn-copy-logger">Copy Log</button>
                 <button class="dialog-action-btn primary" onclick="closeModal('modal-logger')">Close</button>
@@ -859,20 +859,20 @@
     </div>
 
     <!-- Modal 6: Open MoSim Model (.mosim) Dialog & Library -->
-    <div class="opensim-modal-backdrop" id="modal-open-model">
-        <div class="opensim-modal-dialog" style="width: 780px; max-width: 95vw;">
-            <div class="opensim-dialog-titlebar">
+    <div class="mosim-modal-backdrop" id="modal-open-model">
+        <div class="mosim-modal-dialog" style="width: 780px; max-width: 95vw;">
+            <div class="mosim-dialog-titlebar">
                 <div class="dialog-title-left">
                     <span>🦴</span> <span>Open MoSim Biomechanical Model (.mosim)</span>
                 </div>
                 <button class="dialog-close-btn" onclick="closeModal('modal-open-model')">✕</button>
             </div>
-            <div class="opensim-dialog-tabs" id="open-model-tabs">
+            <div class="mosim-dialog-tabs" id="open-model-tabs">
                 <button class="dialog-tab-btn active" id="tab-btn-model-examples" onclick="switchModelDialogTab('examples')">Model Library & Examples</button>
                 <button class="dialog-tab-btn" id="tab-btn-model-import" onclick="switchModelDialogTab('import')">Import Custom .mosim File</button>
                 <button class="dialog-tab-btn" id="tab-btn-model-export" onclick="switchModelDialogTab('export')">Save Current (.mosim)</button>
             </div>
-            <div class="opensim-dialog-body" style="padding: 14px; max-height: 480px; overflow-y: auto;">
+            <div class="mosim-dialog-body" style="padding: 14px; max-height: 480px; overflow-y: auto;">
                 <!-- Tab 1: Model Library & Prebuilt Examples -->
                 <div id="tab-view-model-examples">
                     <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px; line-height: 1.5;">
@@ -919,7 +919,7 @@
                     <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px; line-height: 1.5;">
                         Export the currently loaded biomechanical model, including its active joint coordinates, mass, and Hill musculotendon parameters, into a portable <strong>.mosim</strong> JSON model definition.
                     </div>
-                    <fieldset class="opensim-groupbox">
+                    <fieldset class="mosim-groupbox">
                         <legend>Model Metadata</legend>
                         <div class="dialog-row">
                             <label style="width: 110px;">Model Name:</label>
@@ -939,7 +939,7 @@
                     </button>
                 </div>
             </div>
-            <div class="opensim-dialog-footer">
+            <div class="mosim-dialog-footer">
                 <button class="dialog-action-btn" onclick="closeModal('modal-open-model')">Close</button>
             </div>
         </div>

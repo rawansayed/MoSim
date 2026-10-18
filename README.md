@@ -3,9 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/rawansayed/MoSim?style=social)](https://github.com/rawansayed/MoSim)
 [![WebGL 2.0](https://img.shields.io/badge/WebGL-2.0%20Accelerated-brightgreen.svg)]()
-[![OpenSim 4.5 Inspired](https://img.shields.io/badge/OpenSim-4.5%20Modernized-purple.svg)]()
+[![MoSim 4.5 Inspired](https://img.shields.io/badge/MoSim-4.5%20Modernized-purple.svg)]()
 
-> **MoSim** is a high-performance, web-native virtual musculoskeletal simulator engineered to match and surpass legacy desktop tools (such as OpenSim 4.5) by providing instant browser-based 3D modeling, physically grounded bone-tendon-muscle simulation, interactive biomechanical coordinate inspection, and modern glassmorphic visualization.
+> **MoSim** is a high-performance, web-native virtual musculoskeletal simulator engineered to match and surpass legacy desktop tools (such as MoSim 4.5) by providing instant browser-based 3D modeling, physically grounded bone-tendon-muscle simulation, interactive biomechanical coordinate inspection, and modern glassmorphic visualization.
 
 ---
 
@@ -108,9 +108,9 @@ Open `http://localhost:8090/index.html`.
    - Click the **⚡ Forward Dynamics** button. Stimulate the quadriceps or hamstrings using the excitation sliders and watch muscle tension accelerate the skeletal segment dynamically against gravity ($I \ddot{q} = \tau_{\text{muscle}} - \tau_{\text{gravity}} - b \dot{q}$).
 4. **Motion Simulation Replay:**
    - Click **▶ Play Motion** to replay normalized physiological human walking gait (Rajagopal 2016 dataset) or dynamic elbow flexion cycles.
-5. **OpenSim 4.x Interoperability:**
-   - Click **📁 Export .osim** to download a standard OpenSim 4.x `.osim` XML model file.
-   - Click **📊 Export .mot** to download motion capture trajectory files compatible with OpenSim's Plotter and Motion tools.
+5. **MoSim 4.x Interoperability:**
+   - Click **📁 Export .osim** to download a standard MoSim 4.x `.osim` XML model file.
+   - Click **📊 Export .mot** to download motion capture trajectory files compatible with MoSim's Plotter and Motion tools.
 6. **3D High-DPI Snapshot:**
    - Click **📷 Snapshot** to save a publication-ready transparent PNG screenshot of your 3D biomechanical scene.
 

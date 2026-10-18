@@ -13,7 +13,7 @@
 ## 1. Introduction
 
 ### 1.1 Purpose
-This Software Requirements Specification (SRS) details the complete functional, mathematical, architectural, and user interface requirements for **MoSim** (Motion & Musculoskeletal Simulator). MoSim is a high-performance, web-native virtual musculoskeletal simulator engineered to match and surpass legacy desktop tools (such as OpenSim 4.5) by providing instant browser-based 3D modeling, physically grounded bone-tendon-muscle simulation, interactive biomechanical coordinate inspection, and modern glassmorphic visualization.
+This Software Requirements Specification (SRS) details the complete functional, mathematical, architectural, and user interface requirements for **MoSim** (Motion & Musculoskeletal Simulator). MoSim is a high-performance, web-native virtual musculoskeletal simulator engineered to match and surpass legacy desktop tools (such as MoSim 4.5) by providing instant browser-based 3D modeling, physically grounded bone-tendon-muscle simulation, interactive biomechanical coordinate inspection, and modern glassmorphic visualization.
 
 ### 1.2 Scope of the Software
 MoSim provides a web-based computational environment for:
@@ -22,7 +22,7 @@ MoSim provides a web-based computational environment for:
 3. **Muscle Routing & Wrapping Geometries:** Defining muscle paths via origin, insertion, via-points, and geometric wrapping surfaces (cylinders, ellipsoids) to compute realistic moment arms $r(q) = -\partial l_{mt}/\partial q$.
 4. **Real-Time Interactive Biomechanical Analytics:** Providing live operating-point plots on active/passive force-length and force-velocity curves, moment arm profiles, and joint torque equilibrium.
 5. **Numerical Solvers:** Executing Forward Dynamics (numerical integration of $\ddot{q}$), Inverse Kinematics, and Static Optimization (muscle force sharing quadratic programming).
-6. **OpenSim Interoperability:** Importing and exporting model specifications (`.osim` XML) and motion capture data (`.mot`, `.trc`, `.csv`).
+6. **MoSim Interoperability:** Importing and exporting model specifications (`.osim` XML) and motion capture data (`.mot`, `.trc`, `.csv`).
 
 ### 1.3 Definitions, Acronyms, and Abbreviations
 | Term | Definition |
@@ -42,8 +42,8 @@ MoSim provides a web-based computational environment for:
 
 ## 2. Overall Description
 
-### 2.1 Product Perspective & Legacy OpenSim Modernization
-Legacy desktop simulation platforms (such as OpenSim 4.5 based on Java NetBeans / OpenGL 1.2) require complex C++ toolchains, heavy desktop installations, and separate plotting windows with non-interactive batch pipelines.
+### 2.1 Product Perspective & Legacy MoSim Modernization
+Legacy desktop simulation platforms (such as MoSim 4.5 based on Java NetBeans / OpenGL 1.2) require complex C++ toolchains, heavy desktop installations, and separate plotting windows with non-interactive batch pipelines.
 
 **MoSim** re-engineers this experience into a modern web ecosystem:
 - **Zero Installation:** Runs immediately in modern WebGL 2.0 / WebGPU web browsers.
@@ -132,6 +132,6 @@ $$\min_{F_m} J = \sum_{m=1}^{M} \left( \frac{F_m}{F_{0,m}^{\max}} \right)^2 \qua
 - **FR-10 (Posture Presets):** 1-click clinical postures (Neutral, Mid-Stance, Toe-Off, Deep Squat).
 - **FR-11 (Model Hierarchy):** Interactive tree inspector with live force badges.
 - **FR-12 (Static Optimization):** Quadratic programming muscle load-sharing solver.
-- **FR-13 (Interoperability):** OpenSim `.osim` XML and `.mot` motion compatibility.
+- **FR-13 (Interoperability):** MoSim `.osim` XML and `.mot` motion compatibility.
 - **FR-14 (Responsive Layout):** Dark glassmorphic workspace docking.
 - **FR-15 (Telemetry HUD):** Floating viewport stats for current muscle tension and lengths.

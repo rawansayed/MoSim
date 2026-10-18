@@ -1627,17 +1627,17 @@ class WholeBodySystem {
 }
 
 /**
- * OpenSim Interoperability Engine
- * Exports and Imports OpenSim .osim XML models and .mot motion trajectory data
+ * MoSim Interoperability Engine
+ * Exports and Imports MoSim .osim XML models and .mot motion trajectory data
  */
-class OpenSimIO {
+class MoSimIO {
     /**
-     * Export Musculoskeletal System to standard OpenSim 4.x .osim XML format
+     * Export Musculoskeletal System to standard MoSim 4.x .osim XML format
      */
     static exportToOsimXml(system, modelName = "MoSim_Musculoskeletal_Model") {
 
         let xml = `<?xml version="1.0" encoding="UTF-8" ?>\n`;
-        xml += `<OpenSimDocument Version="40000">\n`;
+        xml += `<MoSimDocument Version="40000">\n`;
         xml += `  <Model name="${modelName}">\n`;
         xml += `    <credits>Built with MoSim Next-Generation Web Musculoskeletal Simulator</credits>\n`;
         xml += `    <publications>Rajagopal et al. 2016 / Holzbaur et al. 2005</publications>\n`;
@@ -1669,13 +1669,13 @@ class OpenSimIO {
         }
         xml += `      </objects>\n    </ForceSet>\n`;
         xml += `  </Model>\n`;
-        xml += `</OpenSimDocument>\n`;
+        xml += `</MoSimDocument>\n`;
 
         return xml;
     }
 
     /**
-     * Export time series kinematic motion data to OpenSim .mot format
+     * Export time series kinematic motion data to MoSim .mot format
      */
     static exportMotionFile(timeArray, coordNames, rowData) {
         let mot = `Coordinates\n`;
@@ -1772,14 +1772,14 @@ class ForwardDynamicsEngine {
 }
 
 // =========================================================================
-// OPENSIM SIMULATION PIPELINE & TOOLS (Scale, IK, ID, SO, CMC, JRA, Moco)
+// MOSIM SIMULATION PIPELINE & TOOLS (Scale, IK, ID, SO, CMC, JRA, Moco)
 // =========================================================================
 
 /**
- * OpenSim Landmark Motion Data Library
+ * MoSim Landmark Motion Data Library
  * Real kinematics, kinetics, marker sets, and GRF trajectories from benchmark studies.
  */
-class OpenSimLandmarkMotions {
+class MoSimLandmarkMotions {
     static getMotion(motionId = "normal_gait") {
         const numFrames = 101;
         let duration = 1.2;
@@ -2189,10 +2189,10 @@ class OpenSimLandmarkMotions {
 }
 
 /**
- * OpenSim Anthropometric Model Scaler (Scale Tool)
+ * MoSim Anthropometric Model Scaler (Scale Tool)
  * Scales bone lengths, masses, inertia tensors, muscle fiber lengths & tendon slack lengths.
  */
-class OpenSimScaleTool {
+class MoSimScaleTool {
     constructor(system) {
         this.system = system;
         this.subjectMass = 75.0; // kg
@@ -2261,16 +2261,16 @@ class OpenSimScaleTool {
 }
 
 /**
- * OpenSim Inverse Kinematics (IK) Solver
+ * MoSim Inverse Kinematics (IK) Solver
  * Matches 3D experimental marker trajectories to generalized coordinates via weighted least squares.
  */
-class OpenSimInverseKinematics {
+class MoSimInverseKinematics {
     constructor(system) {
         this.system = system;
     }
 
     solve(motionId = "normal_gait", timeRange = [0.0, 1.2]) {
-        const motion = OpenSimLandmarkMotions.getMotion(motionId);
+        const motion = MoSimLandmarkMotions.getMotion(motionId);
         const [tStart, tEnd] = timeRange;
         const solvedFrames = [];
         let totalSqError = 0;
@@ -2326,17 +2326,17 @@ class OpenSimInverseKinematics {
 }
 
 /**
- * OpenSim Inverse Dynamics (ID) Solver
+ * MoSim Inverse Dynamics (ID) Solver
  * Computes net joint torques from kinematics and ground reaction forces.
  * Equation: M(q)*q_ddot + C(q, q_dot) + G(q) = tau + J_grf^T * F_grf
  */
-class OpenSimInverseDynamics {
+class MoSimInverseDynamics {
     constructor(system) {
         this.system = system;
     }
 
     solve(motionId = "normal_gait", timeRange = [0.0, 1.2], lowPassFilterHz = 6.0) {
-        const motion = OpenSimLandmarkMotions.getMotion(motionId);
+        const motion = MoSimLandmarkMotions.getMotion(motionId);
         const [tStart, tEnd] = timeRange;
         const results = [];
         let maxHipMoment = 0;
@@ -2380,17 +2380,17 @@ class OpenSimInverseDynamics {
 }
 
 /**
- * OpenSim Static Optimization (SO) Solver
+ * MoSim Static Optimization (SO) Solver
  * Solves the muscle redundancy load sharing problem at each frame:
  * min sum(a_m^2) subject to sum(r_m * F_m) = tau
  */
-class OpenSimStaticOptimization {
+class MoSimStaticOptimization {
     constructor(system) {
         this.system = system;
     }
 
     solve(motionId = "normal_gait", timeRange = [0.0, 1.2]) {
-        const motion = OpenSimLandmarkMotions.getMotion(motionId);
+        const motion = MoSimLandmarkMotions.getMotion(motionId);
         const [tStart, tEnd] = timeRange;
         const results = [];
 
@@ -2433,16 +2433,16 @@ class OpenSimStaticOptimization {
 }
 
 /**
- * OpenSim Joint Reaction Analysis (JRA) Solver
+ * MoSim Joint Reaction Analysis (JRA) Solver
  * Calculates internal joint contact forces (compression and shear) at the tibiofemoral joint.
  */
-class OpenSimJointReactionAnalysis {
+class MoSimJointReactionAnalysis {
     constructor(system) {
         this.system = system;
     }
 
     solve(motionId = "normal_gait", timeRange = [0.0, 1.2]) {
-        const motion = OpenSimLandmarkMotions.getMotion(motionId);
+        const motion = MoSimLandmarkMotions.getMotion(motionId);
         const [tStart, tEnd] = timeRange;
         const results = [];
         let peakKneeCompBW = 0;
@@ -2478,10 +2478,10 @@ class OpenSimJointReactionAnalysis {
 }
 
 /**
- * OpenSim Moco Direct Collocation Tool
+ * MoSim Moco Direct Collocation Tool
  * Direct collocation optimal control synthesis without experimental mocap data.
  */
-class OpenSimMocoTool {
+class MoSimMocoTool {
     constructor(system) {
         this.system = system;
     }
@@ -2525,15 +2525,15 @@ if (typeof window !== "undefined") {
     window.MusculoskeletalSystem = MusculoskeletalSystem;
     window.UpperLimbSystem = UpperLimbSystem;
     window.WholeBodySystem = WholeBodySystem;
-    window.OpenSimIO = OpenSimIO;
+    window.MoSimIO = MoSimIO;
     window.ForwardDynamicsEngine = ForwardDynamicsEngine;
-    window.OpenSimLandmarkMotions = OpenSimLandmarkMotions;
-    window.OpenSimScaleTool = OpenSimScaleTool;
-    window.OpenSimInverseKinematics = OpenSimInverseKinematics;
-    window.OpenSimInverseDynamics = OpenSimInverseDynamics;
-    window.OpenSimStaticOptimization = OpenSimStaticOptimization;
-    window.OpenSimJointReactionAnalysis = OpenSimJointReactionAnalysis;
-    window.OpenSimMocoTool = OpenSimMocoTool;
+    window.MoSimLandmarkMotions = MoSimLandmarkMotions;
+    window.MoSimScaleTool = MoSimScaleTool;
+    window.MoSimInverseKinematics = MoSimInverseKinematics;
+    window.MoSimInverseDynamics = MoSimInverseDynamics;
+    window.MoSimStaticOptimization = MoSimStaticOptimization;
+    window.MoSimJointReactionAnalysis = MoSimJointReactionAnalysis;
+    window.MoSimMocoTool = MoSimMocoTool;
 }
 if (typeof module !== "undefined" && module.exports) {
     module.exports = {
@@ -2541,15 +2541,15 @@ if (typeof module !== "undefined" && module.exports) {
         MusculoskeletalSystem,
         UpperLimbSystem,
         WholeBodySystem,
-        OpenSimIO,
+        MoSimIO,
         ForwardDynamicsEngine,
-        OpenSimLandmarkMotions,
-        OpenSimScaleTool,
-        OpenSimInverseKinematics,
-        OpenSimInverseDynamics,
-        OpenSimStaticOptimization,
-        OpenSimJointReactionAnalysis,
-        OpenSimMocoTool
+        MoSimLandmarkMotions,
+        MoSimScaleTool,
+        MoSimInverseKinematics,
+        MoSimInverseDynamics,
+        MoSimStaticOptimization,
+        MoSimJointReactionAnalysis,
+        MoSimMocoTool
     };
 }
 
