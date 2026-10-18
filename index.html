@@ -45,8 +45,20 @@
 
             <!-- Model Switcher Dropdown -->
             <select id="select-model" class="topbar-select" style="margin-left: 12px;">
-                <option value="lower_limb">Lower Extremity (Pelvis-Femur-Tibia-Foot, 10 MTUs)</option>
-                <option value="upper_limb">Upper Limb (Arm & Elbow 3-DOF, 6 MTUs)</option>
+                <optgroup label="🌐 Whole Body Systems">
+                    <option value="whole_body" selected>Whole Body (Upper & Lower Musculoskeletal Human)</option>
+                </optgroup>
+                <optgroup label="⚡ Regional Assemblies">
+                    <option value="lower_body">Lower Part (Pelvis, Right Leg, Left Leg)</option>
+                    <option value="upper_body">Upper Part (Neck, Skull, Right & Left Hand / Arm)</option>
+                </optgroup>
+                <optgroup label="🔬 Isolated Single-Part Models">
+                    <option value="right_arm">Right Arm & Hand Only (Humerus, Forearm, Hand & 6 MTUs)</option>
+                    <option value="left_arm">Left Arm & Hand Only (Humerus, Forearm, Hand & 6 MTUs)</option>
+                    <option value="right_leg">Right Leg Only (Pelvis, Femur, Tibia, Foot & 10 MTUs)</option>
+                    <option value="left_leg">Left Leg Only (Pelvis, Femur, Tibia, Foot & 10 MTUs)</option>
+                    <option value="head_neck">Head & Neck Only (Skull, Mandible, C1-C7 & Cervical MTUs)</option>
+                </optgroup>
             </select>
         </div>
 

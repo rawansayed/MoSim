@@ -323,12 +323,23 @@ class BiomechanicalPlotter {
         ctx.fillText("Extension (+) ▶", x0 + pad.left + 5, y0 + 35);
 
         // Get moment arms for the selected joint
-        let coordKey = "knee_angle";
-        if (this.system.modelType === "upper_limb") {
-            coordKey = this.selectedJoint === "shoulder" ? "shoulder_flexion" : "elbow_flexion";
-        } else {
-            coordKey = this.selectedJoint === "hip" ? "hip_flexion" :
-                       this.selectedJoint === "ankle" ? "ankle_angle" : "knee_angle";
+        let coordKey = this.selectedJoint;
+        if (!this.system.coordLimits || !this.system.coordLimits[coordKey]) {
+            if (this.selectedJoint === "knee") {
+                coordKey = (this.system.coordLimits && this.system.coordLimits["knee_angle_r"]) ? "knee_angle_r" : "knee_angle";
+            } else if (this.selectedJoint === "hip") {
+                coordKey = (this.system.coordLimits && this.system.coordLimits["hip_flexion_r"]) ? "hip_flexion_r" : "hip_flexion";
+            } else if (this.selectedJoint === "ankle") {
+                coordKey = (this.system.coordLimits && this.system.coordLimits["ankle_angle_r"]) ? "ankle_angle_r" : "ankle_angle";
+            } else if (this.selectedJoint === "elbow") {
+                coordKey = (this.system.coordLimits && this.system.coordLimits["elbow_flexion_r"]) ? "elbow_flexion_r" : "elbow_flexion";
+            } else if (this.selectedJoint === "shoulder") {
+                coordKey = (this.system.coordLimits && this.system.coordLimits["shoulder_flexion_r"]) ? "shoulder_flexion_r" : "shoulder_flexion";
+            } else if (this.selectedJoint === "neck") {
+                coordKey = "neck_flexion";
+            } else {
+                coordKey = this.system.coordLimits ? Object.keys(this.system.coordLimits)[0] : "knee_angle";
+            }
         }
         const momentArms = this.system.computeMomentArms(coordKey);
 

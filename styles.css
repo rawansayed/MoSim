@@ -153,9 +153,19 @@ body {
     box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
 }
 
+.topbar-select optgroup {
+    background: #070c18;
+    color: var(--accent-cyan);
+    font-weight: 700;
+    font-size: 11px;
+    padding: 6px 4px;
+}
+
 .topbar-select option {
     background: #0f172a;
-    color: #fff;
+    color: #f8fafc;
+    font-weight: 500;
+    padding: 4px 8px;
 }
 
 /* ================= Main Workspace Layout ================= */
