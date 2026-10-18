@@ -490,3 +490,121 @@ body {
     border-color: var(--accent-cyan);
     color: var(--accent-cyan);
 }
+
+/* ================= Action Info Banner & Interactive Feature Inspector ================= */
+.action-info-banner {
+    position: fixed;
+    top: 68px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: rgba(15, 23, 42, 0.94);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(56, 189, 248, 0.5);
+    border-radius: var(--radius-md);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65), 0 0 20px rgba(56, 189, 248, 0.35);
+    padding: 14px 20px;
+    z-index: 1000;
+    width: 90%;
+    max-width: 640px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.action-info-banner.show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+}
+
+.action-info-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 6px;
+}
+
+.action-info-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-info-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 16px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.action-info-close:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.action-info-body {
+    font-size: 12px;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.action-info-tip {
+    font-size: 11px;
+    color: var(--accent-gold);
+    margin-top: 6px;
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Persistent Interactive Inspector Bar in Viewport */
+.action-inspector-bar {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    background: rgba(10, 15, 29, 0.88);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 10;
+    transition: all 0.2s ease;
+}
+
+.action-inspector-bar.highlight {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+}
+
+.inspector-text {
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.inspector-tag {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(56, 189, 248, 0.15);
+    color: var(--accent-cyan);
+}
+

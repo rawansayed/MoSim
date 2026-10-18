@@ -18,6 +18,22 @@
     </script>
 </head>
 <body>
+    <!-- Action Info Banner (Triggered upon clicking any button) -->
+    <div class="action-info-banner" id="action-info-banner">
+        <div class="action-info-header">
+            <span class="action-info-title" id="action-banner-title">
+                <span>ℹ️</span> <span>Feature Information</span>
+            </span>
+            <button class="action-info-close" id="action-banner-close" title="Dismiss">✕</button>
+        </div>
+        <div class="action-info-body" id="action-banner-desc">
+            Click any button to inspect its action.
+        </div>
+        <div class="action-info-tip" id="action-banner-tip">
+            <span>💡</span> <span id="action-banner-tip-text">Tip</span>
+        </div>
+    </div>
+
     <!-- Top Navigation Bar -->
     <header class="topbar">
         <div class="brand-section">
@@ -145,7 +161,15 @@
                 <div class="hud-row">
                     <span class="hud-label">Neural Activation:</span>
                     <span class="hud-value" id="hud-activation" style="color: var(--accent-green);">5%</span>
+            </div>
+
+            <!-- Persistent Action Telemetry Bar (Real-time Explainer on Click/Hover) -->
+            <div class="action-inspector-bar" id="action-inspector-bar">
+                <div class="inspector-text">
+                    <span class="inspector-tag" id="inspector-tag">ACTION INFO</span>
+                    <span id="inspector-message">Click or hover any button, slider, or model component to see biomechanical action details.</span>
                 </div>
+                <span style="font-size: 10px; color: var(--text-muted);" id="inspector-status-badge">MoSim Ready</span>
             </div>
         </section>
 
@@ -240,6 +264,9 @@
             document.getElementById("tab-content-coords").style.display = tabName === "coords" ? "block" : "none";
             document.getElementById("tab-content-stim").style.display = tabName === "stim" ? "block" : "none";
             document.getElementById("tab-content-solver").style.display = tabName === "solver" ? "block" : "none";
+            if (window.app && window.app.showActionInfo) {
+                window.app.showActionInfo("tab-btn-" + tabName);
+            }
         }
     </script>
     <script src="biomechanics.js"></script>

@@ -786,6 +786,216 @@ class MoSimApp {
                 this.captureSnapshot();
             });
         }
+
+        // Action Info Explainer System (Provides brief info whenever mouse presses any button)
+        this.setupButtonInfoExplainer();
+    }
+
+    /**
+     * Wire up interactive info banners and inspector for all buttons and controls
+     */
+    setupButtonInfoExplainer() {
+        const bannerClose = document.getElementById("action-banner-close");
+        if (bannerClose) {
+            bannerClose.addEventListener("click", () => {
+                const banner = document.getElementById("action-info-banner");
+                if (banner) banner.classList.remove("show");
+            });
+        }
+
+        // 1. Explicitly mapped interactive elements
+        const buttonIds = [
+            "select-model",
+            "btn-play-gait",
+            "btn-toggle-physics",
+            "btn-export-osim",
+            "btn-export-mot",
+            "btn-snapshot",
+            "btn-reset-pose",
+            "btn-solve-so",
+            "tab-btn-coords",
+            "tab-btn-stim",
+            "tab-btn-solver"
+        ];
+
+        for (const id of buttonIds) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener("click", () => this.showActionInfo(id));
+                el.addEventListener("mouseenter", () => {
+                    const inspectorMsg = document.getElementById("inspector-message");
+                    const inspectorTag = document.getElementById("inspector-tag");
+                    if (inspectorMsg) {
+                        const info = this.getActionInfoData(id);
+                        if (info) {
+                            inspectorTag.innerText = info.icon || "INFO";
+                            inspectorMsg.innerHTML = `<strong>${info.title}:</strong> ${info.desc}`;
+                        }
+                    }
+                });
+            }
+        }
+
+        // 2. Camera View buttons
+        document.querySelectorAll(".btn-cam").forEach(btn => {
+            const view = btn.dataset.view || "custom";
+            const info = {
+                title: `Camera View: ${view.toUpperCase()}`,
+                icon: "📷",
+                desc: `Smoothly repositions the 3D camera to the ${view} anatomical viewpoint for clear visualization of joint kinematics.`,
+                tip: "You can also use left-click to orbit, right-click to pan, and scroll to zoom."
+            };
+            btn.addEventListener("click", () => this.showActionInfo("btn-cam", info));
+            btn.addEventListener("mouseenter", () => {
+                const msg = document.getElementById("inspector-message");
+                if (msg) msg.innerHTML = `<strong>${info.title}:</strong> ${info.desc}`;
+            });
+        });
+
+        // 3. Posture Preset buttons
+        document.querySelectorAll(".btn-preset").forEach(btn => {
+            const preset = btn.dataset.preset || "neutral";
+            const info = {
+                title: `Posture Preset: ${preset.replace("_", " ").toUpperCase()}`,
+                icon: "🧍",
+                desc: `Coordinates all musculoskeletal joint angles simultaneously to simulate the ${preset.replace("_", " ")} biomechanical posture.`,
+                tip: "Watch the operating points on the Hill force-length curve glide in real time."
+            };
+            btn.addEventListener("click", () => this.showActionInfo("btn-preset", info));
+            btn.addEventListener("mouseenter", () => {
+                const msg = document.getElementById("inspector-message");
+                if (msg) msg.innerHTML = `<strong>${info.title}:</strong> ${info.desc}`;
+            });
+        });
+
+        // 4. Moment Arm Joint Filter buttons
+        document.querySelectorAll(".btn-joint-select").forEach(btn => {
+            const joint = btn.dataset.joint || "knee";
+            const info = {
+                title: `Moment Arm Filter: ${joint.toUpperCase()}`,
+                icon: "📊",
+                desc: `Recalculates and graphs generalized moment arms (r = -∂l/∂q) for all muscles crossing the ${joint} joint.`,
+                tip: "Green bars (+) denote extension capability; Red bars (-) denote flexion capability."
+            };
+            btn.addEventListener("click", () => this.showActionInfo("btn-joint-select", info));
+        });
+    }
+
+    /**
+     * Dictionary of descriptions for all buttons and interactive elements
+     */
+    getActionInfoData(key) {
+        const infoMap = {
+            "select-model": {
+                title: "Model Architecture Selector",
+                icon: "🧬",
+                desc: "Switches the active musculoskeletal model between Lower Extremity (Rajagopal 2016: 10 MTUs) and Upper Limb (Holzbaur 2005: 6 MTUs). Rebuilds the 3D skeleton, joint coordinates, and muscle tubes instantly.",
+                tip: "Switch to Upper Limb to explore Biceps and Triceps mechanics during elbow flexion!"
+            },
+            "btn-play-gait": {
+                title: "Kinematic Motion Simulation",
+                icon: "▶",
+                desc: "Replays dynamic experimental human motion cycles across all joints simultaneously (normal walking gait cycle 0%-100% or dynamic elbow curl).",
+                tip: "Observe how agonist/antagonist muscles stretch and contract across stance and swing phases."
+            },
+            "btn-toggle-physics": {
+                title: "Runge-Kutta 4 Forward Dynamics",
+                icon: "⚡",
+                desc: "Toggles physical forward dynamics integration. Net muscle moments dynamically accelerate joint segments against gravity and joint damping (I·ddq = τ_muscle - m·g·d·sin(q) - b·dq).",
+                tip: "Switch to the 'Excitation' tab and stimulate muscles to see the joint pull and swing under active forces!"
+            },
+            "btn-export-osim": {
+                title: "Export OpenSim 4.x Model (.osim)",
+                icon: "📁",
+                desc: "Generates and downloads a complete OpenSim 4.x XML model file (.osim) including BodySet, JointSet, CoordinateSet, and Millard2012EquilibriumMuscle definitions.",
+                tip: "Open this file in desktop OpenSim 4.5 to run Inverse Kinematics (IK), RRA, CMC, or Moco."
+            },
+            "btn-export-mot": {
+                title: "Export Motion Trajectory (.mot)",
+                icon: "📊",
+                desc: "Exports time-series simulated joint coordinate angles as a standard OpenSim motion file (.mot) with degree units and timestamps.",
+                tip: "You can load this motion file into OpenSim's Motion Player or Plotter tool."
+            },
+            "btn-snapshot": {
+                title: "3D Viewport Snapshot Capture",
+                icon: "📷",
+                desc: "Renders the 3D WebGL scene at native device resolution and triggers an automatic download of a high-quality PNG image.",
+                tip: "Use this to save high-resolution diagrams for research reports or presentation slides."
+            },
+            "btn-reset-pose": {
+                title: "Reset Posture & Controls",
+                icon: "↺",
+                desc: "Restores all joint coordinates to 0.0° anatomical neutral stance, stops playback, and resets muscle excitations to baseline resting tone.",
+                tip: "Quickly restores default alignment after testing extreme joint angles."
+            },
+            "btn-solve-so": {
+                title: "Static Optimization Solver (Force Sharing)",
+                icon: "⚡",
+                desc: "Solves the quadratic programming muscle redundancy problem: minimizes sum(Fm / F0_max)² subject to balancing the user-defined joint torque.",
+                tip: "Optimal activations are calculated and immediately applied to the 3D model and sliders."
+            },
+            "tab-btn-coords": {
+                title: "Joint Coordinates Tab",
+                icon: "📐",
+                desc: "Displays real-time sliders for all anatomical degrees of freedom (Hip, Knee, Ankle, Elbow, Shoulder) with range limits and angle readouts.",
+                tip: "Drag any slider to see the 3D skeleton and muscle paths adapt at 60 FPS."
+            },
+            "tab-btn-stim": {
+                title: "Muscle Neural Excitation Tab",
+                icon: "⚡",
+                desc: "Allows direct stimulation of individual muscles (u ∈ [0, 100%]). Excitation builds active muscle tension via first-order activation kinetics.",
+                tip: "Stimulating muscles expands their 3D belly tube to simulate physiological volume preservation."
+            },
+            "tab-btn-solver": {
+                title: "Optimization & Moments Tab",
+                icon: "🎯",
+                desc: "Configures target joint torques and solves optimal muscle recruitment across agonist and antagonist muscle groups.",
+                tip: "Enter a target torque in N·m and click 'Solve Muscle Recruitment'."
+            }
+        };
+
+        return infoMap[key] || null;
+    }
+
+    /**
+     * Show brief info and biomechanical rationale whenever any button is pressed
+     */
+    showActionInfo(key, customData = null) {
+        const item = customData || this.getActionInfoData(key);
+        if (!item || !item.title) return;
+
+        // 1. Update persistent inspector bar
+        const inspectorBar = document.getElementById("action-inspector-bar");
+        const inspectorTag = document.getElementById("inspector-tag");
+        const inspectorMsg = document.getElementById("inspector-message");
+        const inspectorStatus = document.getElementById("inspector-status-badge");
+
+        if (inspectorBar && inspectorMsg) {
+            if (inspectorTag) inspectorTag.innerText = item.icon || "ACTION";
+            inspectorMsg.innerHTML = `<strong>${item.title}:</strong> ${item.desc}`;
+            if (inspectorStatus) inspectorStatus.innerText = "Active";
+            inspectorBar.classList.add("highlight");
+            setTimeout(() => inspectorBar.classList.remove("highlight"), 1000);
+        }
+
+        // 2. Show floating action info banner
+        const banner = document.getElementById("action-info-banner");
+        const bannerTitle = document.getElementById("action-banner-title");
+        const bannerDesc = document.getElementById("action-banner-desc");
+        const bannerTip = document.getElementById("action-banner-tip-text");
+
+        if (banner) {
+            bannerTitle.innerHTML = `<span>${item.icon || "ℹ️"}</span> <span>${item.title}</span>`;
+            bannerDesc.innerText = item.desc;
+            if (bannerTip) bannerTip.innerText = item.tip || "Interactive biomechanics feature active.";
+
+            banner.classList.add("show");
+
+            if (this.bannerTimeout) clearTimeout(this.bannerTimeout);
+            this.bannerTimeout = setTimeout(() => {
+                banner.classList.remove("show");
+            }, 4500);
+        }
     }
 
     /**
@@ -801,6 +1011,14 @@ class MoSimApp {
             this.plotter.setTarget(muscle, this.system);
         }
         this.updateSimulation();
+
+        // Show interactive action info for selected muscle
+        this.showActionInfo("tree-muscle", {
+            title: `Muscle: ${muscle.displayName}`,
+            icon: "🧬",
+            desc: `F0_max = ${muscle.maxIsometricForce} N | Optimal Fiber Length (lm0) = ${(muscle.optimalFiberLength * 1000).toFixed(1)} mm | Tendon Slack (lt0) = ${(muscle.tendonSlackLength * 1000).toFixed(1)} mm. Live Hill curves now tracking this muscle.`,
+            tip: "Move joint sliders to watch its operating point glide along the active and passive curves."
+        });
     }
 
     /**
