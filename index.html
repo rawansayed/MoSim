@@ -73,6 +73,7 @@
                 <div class="dropdown-row" id="menu-view-side"><span>Lateral / Sagittal (+X)</span><span class="dropdown-shortcut">3</span></div>
                 <div class="dropdown-row" id="menu-view-top"><span>Superior / Top (+Y)</span><span class="dropdown-shortcut">4</span></div>
                 <div class="dropdown-row" id="menu-view-fit"><span>Zoom to Fit / Center</span><span class="dropdown-shortcut">Space</span></div>
+                <div class="dropdown-row" id="menu-view-maximize"><span>Enlarge / Maximize 3D Simulator</span><span class="dropdown-shortcut">F11</span></div>
                 <div class="dropdown-separator"></div>
                 <div class="dropdown-row" id="menu-view-toggle-grid"><span>Toggle Ground Floor Grid</span></div>
                 <div class="dropdown-row" id="menu-view-toggle-axes"><span>Toggle Coordinate Axes Triad (RGB)</span></div>
@@ -326,10 +327,15 @@
                 <button class="cam-cube-btn" id="cam-com" title="Toggle Center of Mass">CoM</button>
             </div>
 
-            <!-- Open View Controls Pill (matching 29164133.png top-right) -->
-            <button class="view-controls-pill" id="btn-view-controls">
-                <span>⚙ Open View Controls</span>
-            </button>
+            <!-- Viewport Top Controls (Enlarge Simulator & View Controls) -->
+            <div class="viewport-top-controls">
+                <button class="view-controls-pill" id="btn-toggle-maximize" title="Enlarge Simulator / Toggle Fullscreen Viewport">
+                    <span id="btn-maximize-text">⛶ Enlarge Simulator</span>
+                </button>
+                <button class="view-controls-pill" id="btn-view-controls" title="Open View Controls Dialog">
+                    <span>⚙ Open View Controls</span>
+                </button>
+            </div>
 
 
             <!-- Real-Time Selected Muscle Telemetry HUD -->

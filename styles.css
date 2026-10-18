@@ -172,12 +172,29 @@ body {
 .main-workspace {
     flex: 1;
     display: grid;
-    grid-template-columns: 280px 1fr 340px;
-    grid-template-rows: 1fr 230px;
+    grid-template-columns: 260px 1fr 310px;
+    grid-template-rows: 1fr;
     gap: 8px;
     padding: 8px;
-    height: calc(100vh - 54px);
+    min-height: 0;
     overflow: hidden;
+    transition: grid-template-columns 0.25s ease;
+}
+
+/* Maximized Viewport Mode: Expands Simulator to 100% Fullscreen Width */
+.main-workspace.maximized-viewport {
+    grid-template-columns: 0px 1fr 0px;
+    gap: 0;
+    padding: 4px;
+}
+
+.main-workspace.maximized-viewport .left-explorer,
+.main-workspace.maximized-viewport .right-dock {
+    display: none !important;
+}
+
+.main-workspace.maximized-viewport .center-viewport {
+    border-radius: var(--radius-sm);
 }
 
 /* Glass Panels */
@@ -234,7 +251,8 @@ body {
 /* ================= Left Panel: Model Explorer Hierarchy ================= */
 .left-explorer {
     grid-column: 1;
-    grid-row: 1 / 3;
+    grid-row: 1;
+    height: 100%;
 }
 
 .tree-section-header {
@@ -314,6 +332,7 @@ body {
     border-radius: var(--radius-md);
     overflow: hidden;
     border: 1px solid var(--border-glass);
+    height: 100%;
 }
 
 #canvas-container {
@@ -332,7 +351,7 @@ body {
 
 .viewport-hud {
     position: absolute;
-    top: 12px;
+    top: 52px;
     right: 12px;
     background: rgba(10, 15, 29, 0.80);
     backdrop-filter: blur(12px);
@@ -363,7 +382,8 @@ body {
 /* ================= Right Panel: DOFs, Controls, Solvers ================= */
 .right-dock {
     grid-column: 3;
-    grid-row: 1 / 3;
+    grid-row: 1;
+    height: 100%;
 }
 
 .tab-nav {
@@ -795,10 +815,17 @@ body {
     color: #38bdf8;
 }
 
-.view-controls-pill {
+.viewport-top-controls {
     position: absolute;
     top: 14px;
     right: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 15;
+}
+
+.view-controls-pill {
     background: rgba(0, 0, 0, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: #e2e8f0;
@@ -807,17 +834,24 @@ body {
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
-    z-index: 10;
     display: flex;
     align-items: center;
     gap: 6px;
     transition: all 0.15s;
+    user-select: none;
 }
 
 .view-controls-pill:hover {
     background: #0284c7;
     border-color: #38bdf8;
     color: #fff;
+    transform: translateY(-1px);
+}
+
+.view-controls-pill.active {
+    background: rgba(56, 189, 248, 0.25);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
 }
 
 .mosim-watermark {

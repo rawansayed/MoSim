@@ -105,9 +105,9 @@ class MoSimApp {
         this.scene.background = new THREE.Color(0x0a0f1d);
         this.scene.fog = new THREE.FogExp2(0x0a0f1d, 0.22);
 
-        // Camera
+        // Camera (Enlarged anatomical perspective)
         this.camera = new THREE.PerspectiveCamera(45, width / height, 0.05, 50);
-        this.camera.position.set(1.4, 0.1, 1.6);
+        this.camera.position.set(0.95, 0.0, 1.10);
 
         // Renderer with High Dynamic Range & Shadows
         this.renderer = new THREE.WebGLRenderer({
@@ -127,7 +127,7 @@ class MoSimApp {
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.08;
-        this.controls.target.set(0.0, -0.4, 0.0);
+        this.controls.target.set(0.0, -0.25, 0.0);
         this.controls.maxPolarAngle = Math.PI / 2 + 0.05;
 
         // Studio Lighting
@@ -1294,10 +1294,11 @@ class MoSimApp {
         mapAction("menu-view-side", () => this.setCameraPreset("sagittal"));
         mapAction("menu-view-top", () => this.setCameraPreset("superior"));
         mapAction("menu-view-fit", () => {
-            this.controls.target.set(0, -0.2, 0);
-            this.camera.position.set(1.4, 0.1, 1.6);
+            this.controls.target.set(0, -0.25, 0);
+            this.camera.position.set(0.95, 0.0, 1.10);
             this.controls.update();
         });
+        mapAction("menu-view-maximize", () => this.toggleMaximizeViewport());
         mapAction("menu-view-toggle-grid", () => {
             this.showGrid = !this.showGrid;
             if (this.gridHelper) this.gridHelper.visible = this.showGrid;
@@ -1380,25 +1381,30 @@ class MoSimApp {
         bindBtn("cam-right", () => this.setCameraPreset("sagittal"));
         bindBtn("cam-top", () => this.setCameraPreset("superior"));
         bindBtn("cam-back", () => {
-            this.camera.position.set(0, -0.2, -2.0);
-            this.controls.target.set(0, -0.3, 0);
+            this.camera.position.set(0, -0.25, -1.40);
+            this.controls.target.set(0, -0.25, 0);
             this.controls.update();
         });
         bindBtn("cam-left", () => {
-            this.camera.position.set(-2.0, -0.2, 0);
-            this.controls.target.set(0, -0.3, 0);
+            this.camera.position.set(-1.40, -0.25, 0);
+            this.controls.target.set(0, -0.25, 0);
             this.controls.update();
         });
         bindBtn("cam-zoom-in", () => {
-            this.camera.position.multiplyScalar(0.85);
+            const dir = new THREE.Vector3().subVectors(this.camera.position, this.controls.target);
+            dir.multiplyScalar(0.80);
+            this.camera.position.addVectors(this.controls.target, dir);
             this.controls.update();
         });
         bindBtn("cam-zoom-out", () => {
-            this.camera.position.multiplyScalar(1.18);
+            const dir = new THREE.Vector3().subVectors(this.camera.position, this.controls.target);
+            dir.multiplyScalar(1.25);
+            this.camera.position.addVectors(this.controls.target, dir);
             this.controls.update();
         });
         bindBtn("cam-pan", () => {
-            this.controls.target.set(0, -0.2, 0);
+            this.controls.target.set(0, -0.25, 0);
+            this.camera.position.set(0.95, 0.0, 1.10);
             this.controls.update();
         });
         bindBtn("cam-snap", () => this.captureSnapshot());
@@ -1409,6 +1415,15 @@ class MoSimApp {
         bindBtn("cam-com", () => {
             this.showCoM = !this.showCoM;
             this.updateSimulation();
+        });
+        bindBtn("btn-toggle-maximize", () => this.toggleMaximizeViewport());
+
+        // F11 Shortcut for Viewport Maximize
+        window.addEventListener("keydown", (e) => {
+            if (e.key === "F11") {
+                e.preventDefault();
+                this.toggleMaximizeViewport();
+            }
         });
     }
 
@@ -1865,23 +1880,49 @@ class MoSimApp {
     setCameraPreset(view) {
         switch (view) {
             case "sagittal":
-                this.camera.position.set(2.0, -0.3, 0.0);
-                this.controls.target.set(0, -0.3, 0);
+                this.camera.position.set(1.40, -0.25, 0.0);
+                this.controls.target.set(0, -0.25, 0);
                 break;
             case "anterior":
-                this.camera.position.set(0.0, -0.3, 2.0);
-                this.controls.target.set(0, -0.3, 0);
+                this.camera.position.set(0.0, -0.25, 1.40);
+                this.controls.target.set(0, -0.25, 0);
                 break;
             case "oblique":
-                this.camera.position.set(1.4, 0.1, 1.6);
-                this.controls.target.set(0, -0.2, 0);
+                this.camera.position.set(0.95, 0.0, 1.10);
+                this.controls.target.set(0, -0.25, 0);
                 break;
             case "superior":
-                this.camera.position.set(0.0, 1.8, 0.1);
-                this.controls.target.set(0, 0, 0);
+                this.camera.position.set(0.0, 1.45, 0.02);
+                this.controls.target.set(0, -0.25, 0);
                 break;
         }
         this.controls.update();
+    }
+
+    toggleMaximizeViewport() {
+        const workspace = document.querySelector(".main-workspace");
+        const btnText = document.getElementById("btn-maximize-text");
+        const btnPill = document.getElementById("btn-toggle-maximize");
+        if (!workspace) return;
+        workspace.classList.toggle("maximized-viewport");
+        const isMax = workspace.classList.contains("maximized-viewport");
+        if (btnText) {
+            btnText.textContent = isMax ? "🗗 Restore Viewport" : "⛶ Enlarge Simulator";
+        }
+        if (btnPill) {
+            btnPill.classList.toggle("active", isMax);
+        }
+        this.logMessage("Viewport", isMax ? "3D Simulator enlarged to full workspace." : "Workspace panels restored.");
+        setTimeout(() => {
+            const container = document.getElementById("canvas-container");
+            if (container && this.camera && this.renderer) {
+                const w = container.clientWidth;
+                const h = container.clientHeight;
+                this.camera.aspect = w / h;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(w, h);
+            }
+        }, 80);
     }
 
     solveStaticOptimization() {
