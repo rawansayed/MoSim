@@ -400,7 +400,312 @@ class BiomechanicalPlotter {
     }
 }
 
+/**
+ * OpenSim Multi-Curve Scientific Plotter Window
+ * Matches the official OpenSim Plotter (Figure 1, Curve Add, Curves List, Y-Quantity vs X-Quantity)
+ */
+class OpenSimPlotterWindow {
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas ? canvas.getContext("2d") : null;
+        this.curves = [];
+        this.title = "Figure 1";
+        this.xLabel = "Time (s)";
+        this.yLabel = "Quantity Value";
+        this.hoverCoord = null;
+
+        // Palette of distinct curve colors matching OpenSim
+        this.palette = [
+            "#38BDF8", // Cyan
+            "#F43F5E", // Rose Red
+            "#22C55E", // Emerald Green
+            "#FACC15", // Amber Gold
+            "#A855F7", // Purple
+            "#FB923C", // Orange
+            "#EC4899", // Pink
+            "#60A5FA"  // Light Blue
+        ];
+
+        if (this.canvas) {
+            this.canvas.addEventListener("mousemove", (e) => this.onMouseMove(e));
+            this.canvas.addEventListener("mouseleave", () => {
+                this.hoverCoord = null;
+                this.render();
+            });
+        }
+    }
+
+    addCurve(name, xData, yData, xLabel = "Time (s)", yLabel = "Value", color = null) {
+        const cColor = color || this.palette[this.curves.length % this.palette.length];
+        const id = "curve_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+        this.xLabel = xLabel;
+        this.yLabel = yLabel;
+        this.curves.push({
+            id,
+            name,
+            xData,
+            yData,
+            color: cColor,
+            visible: true
+        });
+        this.render();
+        return id;
+    }
+
+    removeCurve(id) {
+        this.curves = this.curves.filter(c => c.id !== id);
+        this.render();
+    }
+
+    clearCurves() {
+        this.curves = [];
+        this.render();
+    }
+
+    toggleCurveVisibility(id) {
+        const c = this.curves.find(x => x.id === id);
+        if (c) c.visible = !c.visible;
+        this.render();
+    }
+
+    onMouseMove(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        this.hoverCoord = {
+            px: e.clientX - rect.left,
+            py: e.clientY - rect.top
+        };
+        this.render();
+    }
+
+    resize() {
+        if (!this.canvas) return;
+        const rect = this.canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = rect.width * dpr;
+        this.canvas.height = rect.height * dpr;
+        this.ctx.scale(dpr, dpr);
+        this.width = rect.width;
+        this.height = rect.height;
+    }
+
+    render() {
+        if (!this.canvas || !this.ctx) return;
+        this.resize();
+        const ctx = this.ctx;
+        const w = this.width;
+        const h = this.height;
+
+        // Background (OpenSim Classic or Studio theme)
+        ctx.fillStyle = "#0c1322";
+        ctx.fillRect(0, 0, w, h);
+
+        const pad = { top: 38, right: 35, bottom: 45, left: 65 };
+        const plotW = w - pad.left - pad.right;
+        const plotH = h - pad.top - pad.bottom;
+
+        if (plotW <= 0 || plotH <= 0) return;
+
+        // Title: Figure 1
+        ctx.fillStyle = "#F8FAFC";
+        ctx.font = "700 13px 'Inter', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(this.title, w / 2, 22);
+
+        // Find data limits
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+
+        const visibleCurves = this.curves.filter(c => c.visible && c.xData.length > 0);
+
+        if (visibleCurves.length === 0) {
+            // Default axes when empty
+            minX = 0; maxX = 1.0;
+            minY = 0; maxY = 1.0;
+        } else {
+            visibleCurves.forEach(c => {
+                c.xData.forEach(x => {
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                });
+                c.yData.forEach(y => {
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                });
+            });
+
+            if (minX === maxX) { minX -= 0.5; maxX += 0.5; }
+            if (minY === maxY) { minY -= 0.5; maxY += 0.5; }
+
+            // Add 8% vertical margin
+            const ySpan = maxY - minY;
+            minY -= ySpan * 0.08;
+            maxY += ySpan * 0.08;
+        }
+
+        // Plot Box Background
+        ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+        ctx.fillRect(pad.left, pad.top, plotW, plotH);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(pad.left, pad.top, plotW, plotH);
+
+        // Grid lines & Ticks
+        const xTicks = 6;
+        const yTicks = 5;
+
+        // Vertical Grid lines
+        for (let i = 0; i <= xTicks; i++) {
+            const frac = i / xTicks;
+            const x = pad.left + frac * plotW;
+            const val = minX + frac * (maxX - minX);
+
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(x, pad.top);
+            ctx.lineTo(x, pad.top + plotH);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // X tick label
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "10px 'JetBrains Mono', monospace";
+            ctx.textAlign = "center";
+            ctx.fillText(val.toFixed(2), x, pad.top + plotH + 16);
+        }
+
+        // Horizontal Grid lines
+        for (let i = 0; i <= yTicks; i++) {
+            const frac = i / yTicks;
+            const y = pad.top + (1 - frac) * plotH;
+            const val = minY + frac * (maxY - minY);
+
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(pad.left, y);
+            ctx.lineTo(pad.left + plotW, y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Y tick label
+            ctx.fillStyle = "#94A3B8";
+            ctx.font = "10px 'JetBrains Mono', monospace";
+            ctx.textAlign = "right";
+            ctx.fillText(val.toFixed(1), pad.left - 8, y + 4);
+        }
+
+        // Axis Titles
+        ctx.fillStyle = "#E2E8F0";
+        ctx.font = "600 11px 'Inter', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(this.xLabel, pad.left + plotW / 2, h - 8);
+
+        ctx.save();
+        ctx.translate(16, pad.top + plotH / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText(this.yLabel, 0, 0);
+        ctx.restore();
+
+        // Draw Curves
+        visibleCurves.forEach((curve) => {
+            ctx.strokeStyle = curve.color;
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+
+            const n = curve.xData.length;
+            for (let i = 0; i < n; i++) {
+                const px = pad.left + ((curve.xData[i] - minX) / (maxX - minX)) * plotW;
+                const py = pad.top + (1 - (curve.yData[i] - minY) / (maxY - minY)) * plotH;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+        });
+
+        // Legend at top-right inside plot box
+        if (visibleCurves.length > 0) {
+            let legX = pad.left + plotW - 10;
+            let legY = pad.top + 16;
+            ctx.textAlign = "right";
+
+            visibleCurves.forEach(c => {
+                ctx.fillStyle = c.color;
+                ctx.fillRect(legX - 10, legY - 8, 8, 8);
+                ctx.fillStyle = "#F8FAFC";
+                ctx.font = "10px 'Inter', sans-serif";
+                ctx.fillText(c.name, legX - 16, legY);
+                legY += 15;
+            });
+        }
+
+        // Crosshair tooltip if hover
+        if (this.hoverCoord && visibleCurves.length > 0) {
+            const { px, py } = this.hoverCoord;
+            if (px >= pad.left && px <= pad.left + plotW && py >= pad.top && py <= pad.top + plotH) {
+                // Draw crosshair lines
+                ctx.strokeStyle = "rgba(250, 204, 21, 0.4)";
+                ctx.lineWidth = 1;
+                ctx.setLineDash([2, 2]);
+                ctx.beginPath();
+                ctx.moveTo(px, pad.top);
+                ctx.lineTo(px, pad.top + plotH);
+                ctx.moveTo(pad.left, py);
+                ctx.lineTo(pad.left + plotW, py);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                const valX = minX + ((px - pad.left) / plotW) * (maxX - minX);
+                const valY = minY + (1 - (py - pad.top) / plotH) * (maxY - minY);
+
+                // Tooltip badge
+                const tipText = `(${valX.toFixed(3)}, ${valY.toFixed(2)})`;
+                ctx.font = "10px 'JetBrains Mono', monospace";
+                const tw = ctx.measureText(tipText).width;
+                const tx = Math.min(px + 8, pad.left + plotW - tw - 12);
+                const ty = Math.max(py - 12, pad.top + 14);
+
+                ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+                ctx.fillRect(tx - 4, ty - 12, tw + 8, 16);
+                ctx.strokeStyle = "#FACC15";
+                ctx.strokeRect(tx - 4, ty - 12, tw + 8, 16);
+                ctx.fillStyle = "#FACC15";
+                ctx.textAlign = "left";
+                ctx.fillText(tipText, tx, ty);
+            }
+        }
+    }
+
+    exportToCSV() {
+        if (this.curves.length === 0) return null;
+        let csv = "time_s";
+        this.curves.forEach(c => { csv += `,"${c.name}"`; });
+        csv += "\n";
+
+        const maxPoints = Math.max(...this.curves.map(c => c.xData.length));
+        const refCurve = this.curves[0];
+
+        for (let i = 0; i < maxPoints; i++) {
+            const t = refCurve.xData[i] !== undefined ? refCurve.xData[i] : i;
+            let line = `${t}`;
+            this.curves.forEach(c => {
+                line += `,${c.yData[i] !== undefined ? c.yData[i] : ""}`;
+            });
+            csv += line + "\n";
+        }
+        return csv;
+    }
+}
+
 // Export for browser
 if (typeof window !== "undefined") {
     window.BiomechanicalPlotter = BiomechanicalPlotter;
+    window.OpenSimPlotterWindow = OpenSimPlotterWindow;
 }
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+        BiomechanicalPlotter,
+        OpenSimPlotterWindow
+    };
+}
+

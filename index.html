@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MoSim - Next-Generation Virtual Musculoskeletal Simulator</title>
-    <meta name="description" content="MoSim: Web-native virtual musculoskeletal simulator engineered with 3-element Hill-type muscle equations, multibody rigid dynamics, and real-time 3D biomechanical visualization.">
+    <title>MoSim - OpenSim 4.5 Musculoskeletal Virtual Simulator</title>
+    <meta name="description" content="MoSim: Complete OpenSim 4.5 virtual musculoskeletal simulation environment with multibody dynamics, 3-element Hill-type muscles, Scale, IK, ID, SO, CMC, FD, and JRA tools.">
     <link rel="stylesheet" href="styles.css">
 
     <!-- Three.js and OrbitControls (Offline local bundled with CDN fallback) -->
@@ -17,7 +17,7 @@
         }
     </script>
 </head>
-<body>
+<body class="theme-dark">
     <!-- Action Info Banner (Triggered upon clicking any button) -->
     <div class="action-info-banner" id="action-info-banner">
         <div class="action-info-header">
@@ -27,118 +27,294 @@
             <button class="action-info-close" id="action-banner-close" title="Dismiss">✕</button>
         </div>
         <div class="action-info-body" id="action-banner-desc">
-            Click any button to inspect its action.
+            Click any button or menu item to inspect its biomechanical action.
         </div>
         <div class="action-info-tip" id="action-banner-tip">
             <span>💡</span> <span id="action-banner-tip-text">Tip</span>
         </div>
     </div>
 
-    <!-- Top Navigation Bar -->
-    <header class="topbar">
-        <div class="brand-section">
-            <div class="brand-logo">
-                <div class="brand-logo-icon">M</div>
-                <span>MoSim</span>
+    <!-- 1. Authentic OpenSim Top Menu Bar -->
+    <nav class="opensim-menubar" id="opensim-menubar">
+        <!-- File Menu -->
+        <div class="opensim-menu-item">
+            <span>File</span>
+            <div class="opensim-dropdown">
+                <div class="dropdown-row" id="menu-file-open"><span>Open Model (.osim)...</span><span class="dropdown-shortcut">Ctrl+O</span></div>
+                <div class="dropdown-row" id="menu-file-motion"><span>Open Motion (.mot)...</span><span class="dropdown-shortcut">Ctrl+M</span></div>
+                <div class="dropdown-row" id="menu-file-save"><span>Save Model (.osim)</span><span class="dropdown-shortcut">Ctrl+S</span></div>
+                <div class="dropdown-separator"></div>
+                <div class="dropdown-row" id="menu-file-export-osim"><span>Export OpenSim 4.x XML</span><span class="dropdown-shortcut">.osim</span></div>
+                <div class="dropdown-row" id="menu-file-export-mot"><span>Export Motion Trajectory</span><span class="dropdown-shortcut">.mot</span></div>
+                <div class="dropdown-row" id="menu-file-export-csv"><span>Export Kinematics CSV</span><span class="dropdown-shortcut">.csv</span></div>
+                <div class="dropdown-separator"></div>
+                <div class="dropdown-row" id="menu-file-snapshot"><span>Take 3D Viewport Snapshot</span><span class="dropdown-shortcut">F12</span></div>
             </div>
-            <span class="badge-version">v1.0.0-PRO</span>
+        </div>
 
-            <!-- Model Switcher Dropdown -->
-            <select id="select-model" class="topbar-select" style="margin-left: 12px;">
+        <!-- Edit Menu -->
+        <div class="opensim-menu-item">
+            <span>Edit</span>
+            <div class="opensim-dropdown">
+                <div class="dropdown-row" id="menu-edit-theme"><span>Toggle OpenSim Classic / Dark Theme</span><span class="dropdown-shortcut">F2</span></div>
+                <div class="dropdown-separator"></div>
+                <div class="dropdown-row" id="menu-edit-reset-pose"><span>Reset Coordinates to Default</span><span class="dropdown-shortcut">Ctrl+R</span></div>
+                <div class="dropdown-row" id="menu-edit-lock-all"><span>Lock All Coordinates</span><span class="dropdown-shortcut">Ctrl+L</span></div>
+                <div class="dropdown-row" id="menu-edit-unlock-all"><span>Unlock All Coordinates</span><span class="dropdown-shortcut">Ctrl+U</span></div>
+            </div>
+        </div>
+
+        <!-- View Menu -->
+        <div class="opensim-menu-item">
+            <span>View</span>
+            <div class="opensim-dropdown">
+                <div class="dropdown-row" id="menu-view-iso"><span>Isometric View (3D)</span><span class="dropdown-shortcut">1</span></div>
+                <div class="dropdown-row" id="menu-view-front"><span>Frontal / Anterior (+Z)</span><span class="dropdown-shortcut">2</span></div>
+                <div class="dropdown-row" id="menu-view-side"><span>Lateral / Sagittal (+X)</span><span class="dropdown-shortcut">3</span></div>
+                <div class="dropdown-row" id="menu-view-top"><span>Superior / Top (+Y)</span><span class="dropdown-shortcut">4</span></div>
+                <div class="dropdown-row" id="menu-view-fit"><span>Zoom to Fit / Center</span><span class="dropdown-shortcut">Space</span></div>
+                <div class="dropdown-separator"></div>
+                <div class="dropdown-row" id="menu-view-toggle-grid"><span>Toggle Ground Floor Grid</span></div>
+                <div class="dropdown-row" id="menu-view-toggle-axes"><span>Toggle Coordinate Axes Triad (RGB)</span></div>
+                <div class="dropdown-row" id="menu-view-toggle-markers"><span>Toggle Experimental Mocap Markers</span></div>
+                <div class="dropdown-row" id="menu-view-toggle-com"><span>Toggle Center of Mass (CoM) Marker</span></div>
+                <div class="dropdown-separator"></div>
+                <div class="dropdown-row" id="menu-view-muscle-activation"><span>Color Muscles by: Activation (0-1)</span></div>
+                <div class="dropdown-row" id="menu-view-muscle-length"><span>Color Muscles by: Fiber Length (lm/lm0)</span></div>
+                <div class="dropdown-row" id="menu-view-muscle-force"><span>Color Muscles by: Tendon Force (Ft)</span></div>
+                <div class="dropdown-row" id="menu-view-muscle-crimson"><span>Color Muscles by: OpenSim Crimson Red</span></div>
+            </div>
+        </div>
+
+        <!-- Tools Menu (OpenSim Simulation Pipeline) -->
+        <div class="opensim-menu-item">
+            <span>Tools</span>
+            <div class="opensim-dropdown">
+                <div class="dropdown-row" id="menu-tool-scale"><span>Scale Model...</span><span class="dropdown-shortcut">Scale</span></div>
+                <div class="dropdown-row" id="menu-tool-ik"><span>Inverse Kinematics (IK)...</span><span class="dropdown-shortcut">IK</span></div>
+                <div class="dropdown-row" id="menu-tool-id"><span>Inverse Dynamics (ID)...</span><span class="dropdown-shortcut">ID</span></div>
+                <div class="dropdown-separator"></div>
+                <div class="dropdown-row" id="menu-tool-so"><span>Static Optimization (SO)...</span><span class="dropdown-shortcut">SO</span></div>
+                <div class="dropdown-row" id="menu-tool-cmc"><span>Computed Muscle Control (CMC)...</span><span class="dropdown-shortcut">CMC</span></div>
+                <div class="dropdown-row" id="menu-tool-fd"><span>Forward Dynamics Simulation...</span><span class="dropdown-shortcut">FD</span></div>
+                <div class="dropdown-separator"></div>
+                <div class="dropdown-row" id="menu-tool-jra"><span>Joint Reaction Analysis (JRA)...</span><span class="dropdown-shortcut">JRA</span></div>
+                <div class="dropdown-row" id="menu-tool-moco"><span>OpenSim Moco Direct Collocation...</span><span class="dropdown-shortcut">Moco</span></div>
+            </div>
+        </div>
+
+        <!-- Window Menu -->
+        <div class="opensim-menu-item">
+            <span>Window</span>
+            <div class="opensim-dropdown">
+                <div class="dropdown-row" id="menu-win-navigator"><span>Navigator</span></div>
+                <div class="dropdown-row" id="menu-win-coordinates"><span>Coordinates</span></div>
+                <div class="dropdown-row" id="menu-win-plotter"><span>OpenSim Plotter</span><span class="dropdown-shortcut">Ctrl+P</span></div>
+                <div class="dropdown-row" id="menu-win-logger"><span>Messages / Output Console</span><span class="dropdown-shortcut">Ctrl+`</span></div>
+            </div>
+        </div>
+
+        <!-- Help Menu -->
+        <div class="opensim-menu-item">
+            <span>Help</span>
+            <div class="opensim-dropdown">
+                <div class="dropdown-row" id="menu-help-tutorial-1"><span>Tutorial 1: Intro to Musculoskeletal Modeling</span></div>
+                <div class="dropdown-row" id="menu-help-tutorial-2"><span>Tutorial 2: Tendon Transfer Simulation</span></div>
+                <div class="dropdown-row" id="menu-help-tutorial-3"><span>Tutorial 3: Scaling, IK, and ID</span></div>
+                <div class="dropdown-separator"></div>
+                <div class="dropdown-row" id="menu-help-rajagopal"><span>Study 1: Full-Body Gait (Rajagopal 2016)</span></div>
+                <div class="dropdown-row" id="menu-help-hamner"><span>Study 2: Running Propulsion (Hamner 2010)</span></div>
+                <div class="dropdown-row" id="menu-help-lerner"><span>Study 3: Knee Contact Forces (Lerner 2015)</span></div>
+                <div class="dropdown-row" id="menu-help-dembia-exo"><span>Study 4: Exoskeleton Assistance (Dembia 2017)</span></div>
+                <div class="dropdown-row" id="menu-help-dembia-moco"><span>Study 5: Optimal Control Moco (Dembia 2020)</span></div>
+                <div class="dropdown-separator"></div>
+                <div class="dropdown-row" id="menu-help-about"><span>About MoSim (OpenSim Compatibility)</span></div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 2. Authentic OpenSim Top Sub-Toolbar -->
+    <header class="opensim-subtoolbar">
+        <button class="tool-icon-btn" id="btn-open-model" title="Open Model (.osim)">
+            <span>📂 Open</span>
+        </button>
+        <button class="tool-icon-btn" id="btn-save-model" title="Save Model">
+            <span>💾 Save</span>
+        </button>
+
+        <div class="tool-separator"></div>
+
+        <!-- Model Switcher Dropdown (Matching OpenSim Models) -->
+        <div style="display:flex; align-items:center; gap: 5px;">
+            <span style="font-size: 11px; color: #94a3b8; font-weight: 500;">Model:</span>
+            <select id="select-model" class="topbar-select" style="min-width: 250px;">
                 <optgroup label="🌐 Whole Body Systems">
-                    <option value="whole_body" selected>Whole Body (Upper & Lower Musculoskeletal Human)</option>
+                    <option value="whole_body" selected>3DGaitModel2392 (23 DOFs, 92 MTUs - Rajagopal 2016)</option>
                 </optgroup>
                 <optgroup label="⚡ Regional Assemblies">
-                    <option value="lower_body">Lower Part (Pelvis, Right Leg, Left Leg)</option>
-                    <option value="upper_body">Upper Part (Neck, Skull, Right & Left Hand / Arm)</option>
+                    <option value="lower_body">Lower Extremity (Pelvis, Right Leg, Left Leg)</option>
+                    <option value="upper_body">Upper Extremity (Skull, Neck, Ribcage, Bilateral Arms & Hands)</option>
                 </optgroup>
                 <optgroup label="🔬 Isolated Single-Part Models">
-                    <option value="right_arm">Right Arm & Hand Only (Humerus, Forearm, Hand & 6 MTUs)</option>
-                    <option value="left_arm">Left Arm & Hand Only (Humerus, Forearm, Hand & 6 MTUs)</option>
-                    <option value="right_leg">Right Leg Only (Pelvis, Femur, Tibia, Foot & 10 MTUs)</option>
-                    <option value="left_leg">Left Leg Only (Pelvis, Femur, Tibia, Foot & 10 MTUs)</option>
-                    <option value="head_neck">Head & Neck Only (Skull, Mandible, C1-C7 & Cervical MTUs)</option>
+                    <option value="right_arm">Right Arm & Hand Only (Arm26 Upper Limb)</option>
+                    <option value="left_arm">Left Arm & Hand Only</option>
+                    <option value="right_leg">Right Leg & Foot Only</option>
+                    <option value="left_leg">Left Leg & Foot Only</option>
+                    <option value="head_neck">Head & Neck Only (Skull, Mandible, Cervical Column)</option>
                 </optgroup>
             </select>
         </div>
 
-        <div class="topbar-controls">
-            <!-- Gait / Motion Simulation Controls -->
-            <button class="topbar-btn" id="btn-play-gait">
-                <span>▶ Play Motion</span>
-            </button>
-            <span class="badge-version" id="gait-phase-badge" style="background: rgba(34,197,94,0.15); color: var(--accent-green); border-color: rgba(34,197,94,0.3);">
-                0% (Stance)
-            </span>
-
-            <!-- Forward Dynamics Physics Toggle -->
-            <button class="topbar-btn" id="btn-toggle-physics" style="border-color: rgba(245, 158, 11, 0.4);">
-                <span>⚡ Forward Dynamics</span>
-            </button>
-
-            <!-- OpenSim 4.x Interoperability -->
-            <button class="topbar-btn" id="btn-export-osim" title="Export to OpenSim 4.x .osim XML format">
-                <span>📁 Export .osim</span>
-            </button>
-            <button class="topbar-btn" id="btn-export-mot" title="Export motion trajectory to OpenSim .mot format">
-                <span>📊 Export .mot</span>
-            </button>
-
-            <!-- 3D Snapshot Download -->
-            <button class="topbar-btn" id="btn-snapshot" title="Capture high-resolution 3D snapshot">
-                <span>📷 Snapshot</span>
-            </button>
-
-            <button class="topbar-btn" id="btn-reset-pose">
-                <span>↺ Reset</span>
-            </button>
-
-            <!-- GitHub Project Link -->
-            <a href="https://github.com/rawansayed/MoSim" target="_blank" class="topbar-btn" style="border-color: rgba(56,189,248,0.4);">
-                <span>GitHub Repo ↗</span>
-            </a>
+        <!-- Motion Data Dropdown (Matching 29164138.png) -->
+        <div style="display:flex; align-items:center; gap: 5px; margin-left: 6px;">
+            <span style="font-size: 11px; color: #94a3b8; font-weight: 500;">Motion:</span>
+            <select id="select-motion" class="topbar-select" style="min-width: 175px;">
+                <option value="normal_gait" selected>normal_gait.mot</option>
+                <option value="crouch1_gait">crouch1_gait.mot</option>
+                <option value="running_hamner2010">running_sprint.mot</option>
+                <option value="exoskeleton_dembia2017">exoskeleton_march.mot</option>
+                <option value="deep_squat">deep_squat.mot</option>
+            </select>
         </div>
+
+        <div class="tool-separator"></div>
+
+        <!-- Window View Toggles -->
+        <button class="tool-icon-btn" id="btn-toggle-navigator" title="Show/Hide Navigator">
+            <span>📑 Navigator</span>
+        </button>
+        <button class="tool-icon-btn" id="btn-toggle-coordinates" title="Show/Hide Coordinates">
+            <span>📐 Coordinates</span>
+        </button>
+        <button class="tool-icon-btn" id="btn-open-plotter" title="Open OpenSim Plotter (Figure 1)">
+            <span>📊 Plotter</span>
+        </button>
+        <button class="tool-icon-btn" id="btn-toggle-logger" title="Show Messages / Console Logger">
+            <span>📟 Messages</span>
+        </button>
+
+        <div class="tool-separator" style="margin-left:auto;"></div>
+
+        <!-- Theme Toggle -->
+        <button class="tool-icon-btn" id="btn-theme-toggle" title="Switch Theme (OpenSim Classic Studio / Modern Dark)">
+            <span>🎨 Theme</span>
+        </button>
+
+        <a href="https://github.com/rawansayed/MoSim" target="_blank" class="tool-icon-btn" style="border-color: rgba(56,189,248,0.4);">
+            <span>GitHub ↗</span>
+        </a>
     </header>
 
     <!-- Main Workspace Grid -->
     <main class="main-workspace">
-        <!-- Left Panel: Model Hierarchy Explorer -->
-        <aside class="glass-panel left-explorer">
-            <div class="panel-header">
-                <span class="panel-title">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-                    Model Explorer
-                </span>
-                <span style="font-size: 10px; color: var(--accent-cyan);" id="model-type-badge">Rajagopal 2016</span>
+        <!-- Left Panel: Docked OpenSim Navigator & Coordinates Pane -->
+        <aside class="glass-panel left-explorer" id="left-dock-pane">
+            <div class="tab-nav" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <button class="tab-btn active" id="tab-nav-navigator" onclick="switchLeftTab('navigator')">Navigator</button>
+                <button class="tab-btn" id="tab-nav-coordinates" onclick="switchLeftTab('coordinates')">Coordinates</button>
             </div>
-            <div class="panel-content">
-                <!-- Skeletal Bodies -->
-                <div class="tree-section-header">Skeletal Bodies (Rigid)</div>
+
+            <!-- Tab 1: Navigator Hierarchical Model Tree (matching 29164133.png) -->
+            <div class="panel-content" id="tab-content-navigator">
+                <div style="font-size: 11px; font-weight: 700; color: #38bdf8; margin-bottom: 8px; display:flex; align-items:center; gap:6px;">
+                    <span>🔵</span> <span id="navigator-model-name">3DGaitModel2392</span>
+                </div>
+
+                <div class="tree-section-header">📁 ground</div>
+                <div class="tree-section-header" style="margin-top: 8px;">▼ 📦 Bodies (<span id="count-bodies">14</span>)</div>
                 <ul class="tree-list" id="bodies-tree-list">
-                    <li class="tree-item"><div class="tree-item-left"><span class="tree-dot" style="background:#cbd5e1;"></span><span class="tree-title">Root Reference Frame</span></div><span style="font-size:10px; color:var(--text-muted);">Ground</span></li>
-                    <li class="tree-item"><div class="tree-item-left"><span class="tree-dot" style="background:#cbd5e1;"></span><span class="tree-title">Proximal Bone Segment</span></div><span style="font-size:10px; color:var(--text-muted);">Rigid</span></li>
-                    <li class="tree-item"><div class="tree-item-left"><span class="tree-dot" style="background:#cbd5e1;"></span><span class="tree-title">Intermediate Lever Joint</span></div><span style="font-size:10px; color:var(--text-muted);">Articulated</span></li>
-                    <li class="tree-item"><div class="tree-item-left"><span class="tree-dot" style="background:#cbd5e1;"></span><span class="tree-title">Distal Bone Segment</span></div><span style="font-size:10px; color:var(--text-muted);">End-Effector</span></li>
+                    <!-- Populated dynamically by app.js -->
                 </ul>
 
-                <!-- Musculotendon Units -->
-                <div class="tree-section-header" style="margin-top: 14px;">Muscles & Tendons (Hill-Type)</div>
+                <div class="tree-section-header" style="margin-top: 10px;">▼ 🔗 Joints (<span id="count-joints">12</span>)</div>
+                <ul class="tree-list" id="joints-tree-list">
+                    <!-- Populated dynamically by app.js -->
+                </ul>
+
+                <div class="tree-section-header" style="margin-top: 10px;">▼ 🎯 Markers (<span id="count-markers">16</span>)</div>
+                <ul class="tree-list" id="markers-tree-list">
+                    <!-- Populated dynamically by app.js -->
+                </ul>
+
+                <div class="tree-section-header" style="margin-top: 10px;">▼ 🔴 Forces -> Muscles (<span id="count-muscles">21</span>)</div>
                 <ul class="tree-list" id="muscle-tree-list">
                     <!-- Populated dynamically by app.js -->
                 </ul>
+
+                <div class="tree-section-header" style="margin-top: 10px;">▶ ⚡ Contact Geometry</div>
+                <div class="tree-section-header" style="margin-top: 6px;">▶ 🧭 Controllers & Probes</div>
+                <div class="tree-section-header" style="margin-top: 6px;">▼ 🎬 Motions (<span id="count-motions">normal_gait</span>)</div>
+            </div>
+
+            <!-- Tab 2: Coordinates Table (matching 29164130.png) -->
+            <div class="panel-content" id="tab-content-coordinates" style="display: none;">
+                <div class="coords-header-bar">
+                    <span class="coords-model-title" id="coords-panel-model-name">Model: 3DGaitModel2392</span>
+                    <button class="btn-poses-menu" id="btn-poses-menu">Poses ></button>
+                </div>
+
+                <!-- Dropdown menu for Poses -->
+                <div id="poses-dropdown-menu" style="display:none; position:absolute; right:15px; top:80px; background:#1e293b; border:1px solid #475569; border-radius:4px; z-index:100; box-shadow:0 8px 20px rgba(0,0,0,0.5);">
+                    <div class="dropdown-row" onclick="applyPresetPose('default')"><span>Default (All 0°)</span></div>
+                    <div class="dropdown-row" onclick="applyPresetPose('neutral')"><span>Neutral Anatomical</span></div>
+                    <div class="dropdown-row" onclick="applyPresetPose('heel_strike')"><span>Gait: Heel-Strike</span></div>
+                    <div class="dropdown-row" onclick="applyPresetPose('mid_stance')"><span>Gait: Mid-Stance</span></div>
+                    <div class="dropdown-row" onclick="applyPresetPose('toe_off')"><span>Gait: Toe-Off</span></div>
+                    <div class="dropdown-row" onclick="applyPresetPose('deep_squat')"><span>Clinical: Deep Squat</span></div>
+                    <div class="dropdown-separator"></div>
+                    <div class="dropdown-row" onclick="saveCurrentPosePrompt()"><span>Save Current Pose...</span></div>
+                </div>
+
+                <!-- Column header titles -->
+                <div style="display:grid; grid-template-columns: 88px 46px 20px 20px 26px 1fr 26px 42px; font-size: 10px; color: #94a3b8; font-weight: 600; padding: 2px 0 6px 0; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                    <span>Name</span>
+                    <span style="text-align:right;">Value</span>
+                    <span></span>
+                    <span></span>
+                    <span style="text-align:center;">Min</span>
+                    <span style="text-align:center;">Slider</span>
+                    <span style="text-align:center;">Max</span>
+                    <span style="text-align:right;">Speed</span>
+                </div>
+
+                <!-- Dynamically generated coordinate rows matching 29164130.png -->
+                <div id="coords-table-container" style="margin-top: 4px;">
+                    <!-- Populated dynamically by app.js -->
+                </div>
             </div>
         </aside>
 
-        <!-- Center: 3D Viewport -->
+        <!-- Center: 3D Visualizer Viewport (matching 29164133.png) -->
         <section class="center-viewport">
             <div id="canvas-container"></div>
 
-            <!-- Viewport Camera Quick Actions -->
-            <div class="viewport-overlay">
-                <button class="topbar-btn btn-cam" data-view="oblique" style="padding: 4px 8px; font-size: 10px;">Perspective</button>
-                <button class="topbar-btn btn-cam" data-view="sagittal" style="padding: 4px 8px; font-size: 10px;">Lateral / Sagittal</button>
-                <button class="topbar-btn btn-cam" data-view="anterior" style="padding: 4px 8px; font-size: 10px;">Frontal / Anterior</button>
-                <button class="topbar-btn btn-cam" data-view="superior" style="padding: 4px 8px; font-size: 10px;">Superior / Top</button>
+            <!-- OpenSim Floating Camera Control Cluster (matching 29164133.png top-left) -->
+            <div class="opensim-floating-view-toolbar" title="OpenSim 3D Camera Orientation Cluster">
+                <button class="cam-cube-btn iso" id="cam-iso" title="Isometric View (3D)">ISO</button>
+                <button class="cam-cube-btn front" id="cam-front" title="Front View (+Z)">FRT</button>
+                <button class="cam-cube-btn side" id="cam-right" title="Right Lateral (+X)">RGT</button>
+
+                <button class="cam-cube-btn" id="cam-top" title="Top Superior (+Y)">TOP</button>
+                <button class="cam-cube-btn" id="cam-back" title="Back Posterior (-Z)">BCK</button>
+                <button class="cam-cube-btn side" id="cam-left" title="Left Lateral (-X)">LFT</button>
+
+                <button class="cam-cube-btn" id="cam-zoom-in" title="Zoom In (+)">➕</button>
+                <button class="cam-cube-btn" id="cam-zoom-out" title="Zoom Out (-)">➖</button>
+                <button class="cam-cube-btn" id="cam-pan" title="Pan / Center View">✥</button>
+
+                <button class="cam-cube-btn" id="cam-snap" title="Capture Snapshot">📷</button>
+                <button class="cam-cube-btn" id="cam-axes" title="Toggle Coordinate Axes Triad">XYZ</button>
+                <button class="cam-cube-btn" id="cam-com" title="Toggle Center of Mass">CoM</button>
+            </div>
+
+            <!-- Open View Controls Pill (matching 29164133.png top-right) -->
+            <button class="view-controls-pill" id="btn-view-controls">
+                <span>⚙ Open View Controls</span>
+            </button>
+
+            <!-- OpenSim Watermark (matching 29164133.png bottom-left) -->
+            <div class="opensim-watermark">
+                <span>🏃 OpenSim 4.5</span>
             </div>
 
             <!-- Real-Time Selected Muscle Telemetry HUD -->
@@ -173,48 +349,47 @@
                 <div class="hud-row">
                     <span class="hud-label">Neural Activation:</span>
                     <span class="hud-value" id="hud-activation" style="color: var(--accent-green);">5%</span>
+                </div>
             </div>
 
-            <!-- Persistent Action Telemetry Bar (Real-time Explainer on Click/Hover) -->
+            <!-- Persistent Action Telemetry Bar -->
             <div class="action-inspector-bar" id="action-inspector-bar">
                 <div class="inspector-text">
                     <span class="inspector-tag" id="inspector-tag">ACTION INFO</span>
-                    <span id="inspector-message">Click or hover any button, slider, or model component to see biomechanical action details.</span>
+                    <span id="inspector-message">OpenSim 4.5 Biomechanical Environment loaded and ready.</span>
                 </div>
-                <span style="font-size: 10px; color: var(--text-muted);" id="inspector-status-badge">MoSim Ready</span>
+                <span style="font-size: 10px; color: var(--text-muted);" id="inspector-status-badge">Simbody Engine Online</span>
             </div>
         </section>
 
-        <!-- Right Panel: Coordinates, Excitation, Solvers -->
-        <aside class="glass-panel right-dock">
-            <!-- Tabs -->
+        <!-- Right Panel: Docked Curves & Optimization Telemetry -->
+        <aside class="glass-panel right-dock" id="right-dock-pane">
             <div class="tab-nav">
-                <button class="tab-btn active" id="tab-btn-coords" onclick="showTab('coords')">Coordinates</button>
-                <button class="tab-btn" id="tab-btn-stim" onclick="showTab('stim')">Excitation</button>
-                <button class="tab-btn" id="tab-btn-solver" onclick="showTab('solver')">Optimization</button>
+                <button class="tab-btn active" id="tab-btn-curves" onclick="showRightTab('curves')">Hill Curves</button>
+                <button class="tab-btn" id="tab-btn-stim" onclick="showRightTab('stim')">Excitation</button>
+                <button class="tab-btn" id="tab-btn-solver" onclick="showRightTab('solver')">Optimization</button>
             </div>
 
             <div class="panel-content">
-                <!-- Tab 1: Joint Coordinates -->
-                <div id="tab-content-coords">
-                    <!-- Presets -->
+                <!-- Tab 1: Live Hill Muscle Curves -->
+                <div id="tab-content-curves">
                     <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">
-                        Clinical Posture Presets
+                        Selected Muscle Characteristic Curves
                     </div>
-                    <div class="preset-grid">
-                        <button class="btn-preset" data-preset="neutral">Neutral Stance</button>
-                        <button class="btn-preset" data-preset="mid_stance">Mid-Stance</button>
-                        <button class="btn-preset" data-preset="toe_off">Toe-Off</button>
-                        <button class="btn-preset" data-preset="deep_squat">Deep Squat</button>
+                    <div style="height: 220px; position: relative;">
+                        <canvas id="curve-plot-canvas"></canvas>
                     </div>
 
-                    <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">
-                        Joint Coordinates (DOFs)
+                    <div style="margin-top: 14px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">
+                        Generalized Moment Arm Spectrum
                     </div>
-
-                    <!-- Dynamic container for coordinate sliders -->
-                    <div id="coords-sliders-container">
-                        <!-- Populated dynamically by app.js -->
+                    <div class="joint-filter-bar" style="margin: 8px 0;">
+                        <button class="btn-joint-select active" data-joint="knee">Knee</button>
+                        <button class="btn-joint-select" data-joint="hip">Hip</button>
+                        <button class="btn-joint-select" data-joint="ankle">Ankle</button>
+                    </div>
+                    <div style="height: 180px; position: relative;">
+                        <canvas id="moment-arm-canvas"></canvas>
                     </div>
                 </div>
 
@@ -248,39 +423,362 @@
                 </div>
             </div>
         </aside>
-
-        <!-- Bottom Panel: Dynamic Biomechanical Plotter & HUD -->
-        <section class="glass-panel bottom-telemetry">
-            <div class="panel-header">
-                <span class="panel-title">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                    Real-Time Biomechanical HUD & Curve Inspector
-                </span>
-                <div class="joint-filter-bar">
-                    <span style="font-size: 10px; color: var(--text-muted); align-self: center; margin-right: 4px;">Moment Arm Joint:</span>
-                    <button class="btn-joint-select active" data-joint="knee">Knee</button>
-                    <button class="btn-joint-select" data-joint="hip">Hip</button>
-                    <button class="btn-joint-select" data-joint="ankle">Ankle</button>
-                </div>
-            </div>
-            <div style="flex: 1; position: relative;">
-                <canvas id="curve-plot-canvas"></canvas>
-            </div>
-        </section>
     </main>
 
+    <!-- 3. Dedicated Bottom Motion Player Toolbar (matching 29164139.png) -->
+    <footer class="opensim-motion-player-bar" id="motion-player-toolbar">
+        <div class="motion-time-block">
+            <span>Time</span>
+            <input type="text" id="motion-time-input" class="motion-input-box" value="0.000">
+        </div>
+
+        <div class="motion-time-block">
+            <span>Speed</span>
+            <select id="motion-speed-select" class="motion-input-box" style="width: 58px;">
+                <option value="0.25">0.25x</option>
+                <option value="0.5">0.5x</option>
+                <option value="1.0" selected>1.0x</option>
+                <option value="2.0">2.0x</option>
+            </select>
+        </div>
+
+        <!-- Slider Bar with Start and End Time Labels -->
+        <div class="motion-slider-container">
+            <span class="motion-time-label" id="motion-start-label">0.000</span>
+            <input type="range" min="0" max="100" value="0" step="1" id="motion-scrub-slider" class="motion-scrub-slider">
+            <span class="motion-time-label" id="motion-end-label">1.200</span>
+        </div>
+
+        <!-- Transport Buttons (matching 29164139.png) -->
+        <div class="motion-transport-cluster">
+            <button class="transport-btn" id="btn-motion-first" title="First Frame (|<<)">|◀◀</button>
+            <button class="transport-btn" id="btn-motion-step-back" title="Step Back (<<|)">◀◀|</button>
+            <button class="transport-btn" id="btn-motion-rev" title="Play Reverse (<)">◀</button>
+            <button class="transport-btn pause" id="btn-motion-pause" title="Pause (||)">❚❚</button>
+            <button class="transport-btn play" id="btn-motion-play" title="Play Forward (>)">▶</button>
+            <button class="transport-btn" id="btn-motion-step-fwd" title="Step Forward (||>)">|▶▶</button>
+            <button class="transport-btn" id="btn-motion-last" title="Last Frame (>>|)">▶▶|</button>
+            <button class="transport-btn" id="btn-motion-loop" title="Toggle Loop (🔁)" style="color: #38bdf8;">🔁</button>
+        </div>
+    </footer>
+
+    <!-- =========================================================================
+         OPENSIM TOOL DIALOG MODALS (Scale, IK, ID, SO, CMC, FD, JRA, Moco, Plotter, Logger)
+         ========================================================================= -->
+
+    <!-- Modal 1: Inverse Kinematics (IK) Tool Dialog (matching 29164199.png) -->
+    <div class="opensim-modal-backdrop" id="modal-ik">
+        <div class="opensim-modal-dialog">
+            <div class="opensim-dialog-titlebar">
+                <div class="dialog-title-left">
+                    <span>🏃</span> <span>Inverse Kinematics Tool</span>
+                </div>
+                <button class="dialog-close-btn" onclick="closeModal('modal-ik')">✕</button>
+            </div>
+            <div class="opensim-dialog-tabs">
+                <button class="dialog-tab-btn active">Settings</button>
+                <button class="dialog-tab-btn">Weights</button>
+            </div>
+            <div class="opensim-dialog-body">
+                <fieldset class="opensim-groupbox">
+                    <legend>Current Model</legend>
+                    <div class="dialog-row">
+                        <label>Name</label>
+                        <input type="text" class="dialog-input" value="3DGaitModel2392" readonly>
+                    </div>
+                    <div class="dialog-row">
+                        <label>Marker set</label>
+                        <input type="text" class="dialog-input" value="16 experimental markers loaded" readonly>
+                    </div>
+                </fieldset>
+
+                <fieldset class="opensim-groupbox">
+                    <legend>IK Trial</legend>
+                    <div class="dialog-row">
+                        <label>Marker data for trial</label>
+                        <input type="text" class="dialog-input" id="ik-marker-file" value="Models/Gait2392_Simbody/subject01_walk1.trc">
+                        <button class="dialog-btn-browse">📂</button>
+                    </div>
+                    <div class="dialog-row">
+                        <label>Time range</label>
+                        <div style="display:flex; align-items:center; gap:6px; flex:1;">
+                            <input type="number" class="dialog-input" id="ik-time-start" value="0.0" step="0.1" style="width:70px;">
+                            <span>to</span>
+                            <input type="number" class="dialog-input" id="ik-time-end" value="1.2" step="0.1" style="width:70px;">
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="opensim-groupbox">
+                    <legend>Output</legend>
+                    <div class="dialog-row">
+                        <label>Motion File</label>
+                        <input type="text" class="dialog-input" value="Models/Gait2392_Simbody/subject01_walk1_ik.mot">
+                        <button class="dialog-btn-browse">📂</button>
+                    </div>
+                </fieldset>
+
+                <div id="ik-results-box" style="display:none; background:rgba(0,0,0,0.3); border:1px solid #38bdf8; border-radius:4px; padding:10px; font-size:11px; color:#f1f5f9; line-height:1.6;">
+                    <!-- IK execution telemetry results -->
+                </div>
+            </div>
+            <div class="opensim-dialog-footer">
+                <button class="dialog-action-btn" onclick="closeModal('modal-ik')">Close</button>
+                <button class="dialog-action-btn primary" id="btn-run-ik">Run</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Inverse Dynamics (ID) Tool Dialog (matching 29164196.png) -->
+    <div class="opensim-modal-backdrop" id="modal-id">
+        <div class="opensim-modal-dialog">
+            <div class="opensim-dialog-titlebar">
+                <div class="dialog-title-left">
+                    <span>🏃</span> <span>Inverse Dynamics Tool</span>
+                </div>
+                <button class="dialog-close-btn" onclick="closeModal('modal-id')">✕</button>
+            </div>
+            <div class="opensim-dialog-tabs">
+                <button class="dialog-tab-btn active">Main Settings</button>
+                <button class="dialog-tab-btn">External Loads</button>
+            </div>
+            <div class="opensim-dialog-body">
+                <fieldset class="opensim-groupbox">
+                    <legend>Input</legend>
+                    <div class="dialog-row">
+                        <label>Loaded motion</label>
+                        <select class="dialog-input" id="id-motion-source">
+                            <option value="normal_gait">normal_gait.mot (IK Results)</option>
+                            <option value="crouch1_gait">crouch1_gait.mot</option>
+                            <option value="running_hamner2010">running_sprint.mot</option>
+                        </select>
+                    </div>
+                    <div class="dialog-row">
+                        <label>Filter coordinates</label>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <input type="checkbox" checked id="id-filter-check">
+                            <input type="number" class="dialog-input" value="6.0" style="width:60px;" id="id-filter-freq">
+                            <span>Hz (Low-pass Butterworth)</span>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="opensim-groupbox">
+                    <legend>Time Range</legend>
+                    <div class="dialog-row">
+                        <label>Time range to process</label>
+                        <div style="display:flex; align-items:center; gap:6px; flex:1;">
+                            <input type="number" class="dialog-input" id="id-time-start" value="0.0" step="0.1" style="width:70px;">
+                            <span>to</span>
+                            <input type="number" class="dialog-input" id="id-time-end" value="1.2" step="0.1" style="width:70px;">
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="opensim-groupbox">
+                    <legend>Output Directory</legend>
+                    <div class="dialog-row">
+                        <label>Directory</label>
+                        <input type="text" class="dialog-input" value="Models/Gait2392_Simbody/inverse_dynamics_results/">
+                        <button class="dialog-btn-browse">📂</button>
+                    </div>
+                </fieldset>
+
+                <div id="id-results-box" style="display:none; background:rgba(0,0,0,0.3); border:1px solid #22c55e; border-radius:4px; padding:10px; font-size:11px; color:#f1f5f9; line-height:1.6;">
+                    <!-- ID execution telemetry results -->
+                </div>
+            </div>
+            <div class="opensim-dialog-footer">
+                <button class="dialog-action-btn" onclick="closeModal('modal-id')">Close</button>
+                <button class="dialog-action-btn primary" id="btn-run-id">Run</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Scale Model Tool Dialog (matching 29164204.png) -->
+    <div class="opensim-modal-backdrop" id="modal-scale">
+        <div class="opensim-modal-dialog" style="width:680px;">
+            <div class="opensim-dialog-titlebar">
+                <div class="dialog-title-left">
+                    <span>📏</span> <span>Scale Tool</span>
+                </div>
+                <button class="dialog-close-btn" onclick="closeModal('modal-scale')">✕</button>
+            </div>
+            <div class="opensim-dialog-tabs">
+                <button class="dialog-tab-btn active">Settings</button>
+                <button class="dialog-tab-btn">Scale Factors</button>
+                <button class="dialog-tab-btn">Static Pose Weights</button>
+            </div>
+            <div class="opensim-dialog-body">
+                <fieldset class="opensim-groupbox">
+                    <legend>Subject Anthropometry</legend>
+                    <div class="dialog-row">
+                        <label>Subject Mass (kg)</label>
+                        <input type="number" class="dialog-input" id="scale-subject-mass" value="75.0" step="0.5">
+                    </div>
+                    <div class="dialog-row">
+                        <label>Subject Stature (m)</label>
+                        <input type="number" class="dialog-input" id="scale-subject-height" value="1.75" step="0.01">
+                    </div>
+                </fieldset>
+
+                <fieldset class="opensim-groupbox">
+                    <legend>Applied Scale Factors per Body Segment</legend>
+                    <div style="max-height: 160px; overflow-y: auto; font-size: 11px;">
+                        <table style="width:100%; border-collapse:collapse; color:#cbd5e1;">
+                            <thead>
+                                <tr style="border-bottom:1px solid #475569; text-align:left; color:#94a3b8;">
+                                    <th style="padding:4px;">Body Name</th>
+                                    <th>Measurement</th>
+                                    <th>Scale Factor</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scale-factors-table-body">
+                                <tr><td style="padding:3px;">pelvis</td><td>pelvis_width</td><td id="sf-pelvis">1.000</td></tr>
+                                <tr><td style="padding:3px;">femur_r</td><td>thigh_length</td><td id="sf-femur-r">1.000</td></tr>
+                                <tr><td style="padding:3px;">tibia_r</td><td>shank_length</td><td id="sf-tibia-r">1.000</td></tr>
+                                <tr><td style="padding:3px;">foot_r</td><td>foot_length</td><td id="sf-foot-r">1.000</td></tr>
+                                <tr><td style="padding:3px;">torso</td><td>torso_height</td><td id="sf-torso">1.000</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </fieldset>
+
+                <div id="scale-results-box" style="display:none; background:rgba(0,0,0,0.3); border:1px solid #facc15; border-radius:4px; padding:10px; font-size:11px; color:#f1f5f9; line-height:1.6;">
+                    <!-- Scaling results summary -->
+                </div>
+            </div>
+            <div class="opensim-dialog-footer">
+                <button class="dialog-action-btn" onclick="closeModal('modal-scale')">Close</button>
+                <button class="dialog-action-btn primary" id="btn-run-scale">Run</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 4: OpenSim Multi-Curve Plotter Window (matching 29164146.png) -->
+    <div class="opensim-modal-backdrop" id="modal-plotter">
+        <div class="opensim-modal-dialog" style="width:850px; max-width:95vw;">
+            <div class="opensim-dialog-titlebar">
+                <div class="dialog-title-left">
+                    <span>📊</span> <span>Plotter - Figure 1</span>
+                </div>
+                <button class="dialog-close-btn" onclick="closeModal('modal-plotter')">✕</button>
+            </div>
+            <div class="opensim-dialog-body" style="padding:10px;">
+                <!-- Canvas Figure 1 -->
+                <div style="height:320px; width:100%; position:relative;">
+                    <canvas id="opensim-plotter-canvas"></canvas>
+                </div>
+
+                <!-- Bottom Controls (matching 29164146.png Curve Add / Curves List) -->
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
+                    <!-- Curve Add -->
+                    <fieldset class="opensim-groupbox" style="margin-bottom:0;">
+                        <legend>Curve Add</legend>
+                        <div class="dialog-row">
+                            <label style="width:90px;">Curve Name</label>
+                            <input type="text" class="dialog-input" id="plot-curve-name" value="Knee Angle">
+                        </div>
+                        <div class="dialog-row">
+                            <label style="width:90px;">Y-Quantity...</label>
+                            <select class="dialog-input" id="plot-y-quantity">
+                                <option value="knee_angle">Joint Angle: Knee Angle (°)</option>
+                                <option value="hip_angle">Joint Angle: Hip Flexion (°)</option>
+                                <option value="knee_moment">Joint Moment: Knee Torque (N·m)</option>
+                                <option value="hip_moment">Joint Moment: Hip Torque (N·m)</option>
+                                <option value="grf_y">Ground Reaction: Vertical GRF (N)</option>
+                                <option value="vasti_act">Muscle Activation: Vasti</option>
+                                <option value="glut_act">Muscle Activation: Gluteus Maximus</option>
+                                <option value="knee_contact">Joint Reaction: Knee Compression (BW)</option>
+                            </select>
+                        </div>
+                        <div class="dialog-row">
+                            <label style="width:90px;">X-Quantity...</label>
+                            <select class="dialog-input" id="plot-x-quantity">
+                                <option value="time">Time (s)</option>
+                                <option value="phase">Gait Cycle Phase (%)</option>
+                            </select>
+                        </div>
+                        <button class="dialog-action-btn primary" id="btn-add-plot-curve" style="width:100%; margin-top:4px;">
+                            ➕ Add Curve to Figure 1
+                        </button>
+                    </fieldset>
+
+                    <!-- Curves List -->
+                    <fieldset class="opensim-groupbox" style="margin-bottom:0;">
+                        <legend>Curves List</legend>
+                        <div id="plot-curves-list" style="height:115px; overflow-y:auto; background:rgba(0,0,0,0.3); border:1px solid #334155; border-radius:3px; padding:6px; font-size:11px;">
+                            <!-- Active plotted curves list -->
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-top:8px;">
+                            <button class="dialog-action-btn" id="btn-clear-plot-curves">Clear All</button>
+                            <button class="dialog-action-btn" id="btn-export-plot-csv">Export CSV</button>
+                        </div>
+                    </fieldset>
+                </div>
+            </div>
+            <div class="opensim-dialog-footer">
+                <button class="dialog-action-btn" onclick="closeModal('modal-plotter')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 5: OpenSim Messages / Output Console Logger -->
+    <div class="opensim-modal-backdrop" id="modal-logger">
+        <div class="opensim-modal-dialog" style="width:750px;">
+            <div class="opensim-dialog-titlebar">
+                <div class="dialog-title-left">
+                    <span>📟</span> <span>OpenSim Messages & Output Console</span>
+                </div>
+                <button class="dialog-close-btn" onclick="closeModal('modal-logger')">✕</button>
+            </div>
+            <div class="opensim-dialog-body" style="background:#090d16; font-family:monospace; font-size:11px; color:#a5f3fc; height:350px; overflow-y:auto; padding:12px;" id="logger-console-text">
+                [00:00:00] [Simbody Engine] Multibody tree initialized.<br>
+                [00:00:00] [OpenSim 4.5] Model '3DGaitModel2392' loaded with 23 DOFs and 92 Hill MTUs.<br>
+                [00:00:00] [Visualizer] Three.js WebGL canvas context active.
+            </div>
+            <div class="opensim-dialog-footer">
+                <button class="dialog-action-btn" id="btn-clear-logger">Clear</button>
+                <button class="dialog-action-btn" id="btn-copy-logger">Copy Log</button>
+                <button class="dialog-action-btn primary" onclick="closeModal('modal-logger')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Helpers -->
     <script>
-        function showTab(tabName) {
-            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-            document.getElementById("tab-btn-" + tabName).classList.add("active");
-            document.getElementById("tab-content-coords").style.display = tabName === "coords" ? "block" : "none";
-            document.getElementById("tab-content-stim").style.display = tabName === "stim" ? "block" : "none";
-            document.getElementById("tab-content-solver").style.display = tabName === "solver" ? "block" : "none";
-            if (window.app && window.app.showActionInfo) {
-                window.app.showActionInfo("tab-btn-" + tabName);
+        function switchLeftTab(tab) {
+            document.querySelectorAll("#left-dock-pane .tab-btn").forEach(b => b.classList.remove("active"));
+            if (tab === "navigator") {
+                document.getElementById("tab-nav-navigator").classList.add("active");
+                document.getElementById("tab-content-navigator").style.display = "block";
+                document.getElementById("tab-content-coordinates").style.display = "none";
+            } else {
+                document.getElementById("tab-nav-coordinates").classList.add("active");
+                document.getElementById("tab-content-navigator").style.display = "none";
+                document.getElementById("tab-content-coordinates").style.display = "block";
             }
         }
+
+        function showRightTab(tab) {
+            document.querySelectorAll("#right-dock-pane .tab-btn").forEach(b => b.classList.remove("active"));
+            document.getElementById("tab-btn-" + tab).classList.add("active");
+            document.getElementById("tab-content-curves").style.display = tab === "curves" ? "block" : "none";
+            document.getElementById("tab-content-stim").style.display = tab === "stim" ? "block" : "none";
+            document.getElementById("tab-content-solver").style.display = tab === "solver" ? "block" : "none";
+        }
+
+        function openModal(id) {
+            const m = document.getElementById(id);
+            if (m) m.style.display = "flex";
+        }
+
+        function closeModal(id) {
+            const m = document.getElementById(id);
+            if (m) m.style.display = "none";
+        }
     </script>
+
     <script src="biomechanics.js"></script>
     <script src="plotter.js"></script>
     <script src="app.js"></script>
